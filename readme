@@ -12,5 +12,15 @@ Glavne funkcionalnosti:
 - Backup i restore podataka
 - Dodavanje datuma i bilješki uz partije
 
-----
+-----------------------
 Pokreće se putem .bat datoteke kako bi karta svijeta funkcionirala
+----------------------
+
+Kratke upute (TL;DR)
+
+1. Preuzmi sve datoteke (.html, .bat) i folder flags/ (sa svim zastavama)
+2. Stavi sve u isti folder
+3. Pokreni .bat datoteku
+4. Tally counter će se otvoriti u pregledniku
+
+PREDUVJETI: instaliran python (https://www.python.org/downloads/)
