@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafikoni - Tally Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .back-button {
+            padding: 8px 15px;
+            cursor: pointer;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .back-button:hover {
+            background-color: #d32f2f;
+        }
+        .chart-container {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .chart-row {
+             display: flex;
+             flex-wrap: wrap; /* Wrap on smaller screens */
+             gap: 20px; /* Space between charts */
+             margin-bottom: 20px;
+         }
+        .chart-half {
+             flex: 1; /* Each chart takes half the space */
+             min-width: 300px; /* Minimum width before wrapping */
+         }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .summary-stats span {
+            font-weight: bold;
+            display: block; /* Ensure label and value are stacked */
+        }
+         .summary-stats .win { color: green; }
+         .summary-stats .draw { color: orange; }
+         .summary-stats .loss { color: red; }
+         .summary-stats .total { color: #333; }
+
+        /* Simple CSS Bar Chart Styles */
+        .bar-chart {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .bar-chart li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            height: 25px; /* Height of the bar area */
+            font-size: 13px;
+        }
+        .bar-label {
+            width: 150px; /* Adjust as needed for country names */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 10px;
+            text-align: right;
+            flex-shrink: 0; /* Prevent label from shrinking */
+        }
+         .bar-flag {
+             font-size: 18px;
+             margin-left: 5px; /* Space between bar and flag */
+             order: 3; /* Show flag after the value */
+         }
+        .bar-wrapper {
+            flex-grow: 1;
+            height: 100%;
+            background-color: #eee;
+            border-radius: 3px;
+            position: relative;
+            min-width: 100px; /* Minimum width for the bar area */
+            order: 1; /* Bar comes after label */
+        }
+        .bar {
+            display: block;
+            height: 100%;
+            background-color: #4CAF50; /* Default bar color */
+            border-radius: 3px;
+            position: relative;
+            transition: width 0.5s ease-in-out;
+        }
+        .bar-value {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: black;
+            font-size: 11px;
+            font-weight: bold;
+            order: 2; /* Show value inside or near the bar */
+            padding-left: 5px; /* Space between bar and value text if needed */
+        }
+        /* Different colors for bars */
+        .bar-chart.win-percentage .bar { background-color: #2196F3; } /* Blue for win% */
+        .bar-chart.total-matches .bar { background-color: #ff9800; } /* Orange for total matches */
+
+        .min-games-note {
+             font-size: 12px;
+             color: #666;
+             text-align: center;
+             margin-top: -10px;
+             margin-bottom: 15px;
+         }
+        .ratio-list {
+             list-style: none;
+             padding: 0;
+             margin: 0;
+         }
+        .ratio-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        .ratio-list li:last-child {
+             border-bottom: none;
+         }
+        .ratio-flag {
+             font-size: 20px; /* Match flag size in other tables */
+             margin-right: 10px;
+        }
+        .ratio-text {
+            flex-grow: 1;
+        }
+        .ratio-text .country-name {
+             font-weight: bold;
+             color: #333;
+        }
+        .ratio-text .leading { color: green; }
+        .ratio-text .trailing { color: red; }
+        .ratio-text .even { color: orange; }
+
+        /* Pie Chart Styles */
+        .pie-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+            gap: 30px; /* Space between pies */
+            justify-items: center; /* Center pies in grid cells */
+            align-items: start;
+            padding: 10px;
+        }
+        .pie-container {
+            text-align: center;
+        }
+        .pie-chart {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 10px auto; /* Center pie and space below */
+            border: 1px solid #ccc; /* Optional border */
+             /* Background will be set by JS */
+        }
+        .pie-label {
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+        .pie-legend {
+             font-size: 12px;
+             color: #555;
+             list-style: none;
+             padding: 0;
+             margin: 0;
+         }
+        .pie-legend li {
+             margin-bottom: 3px;
+         }
+        .pie-legend .win::before { content: "🟢 "; }
+        .pie-legend .draw::before { content: "🟠 "; }
+        .pie-legend .loss::before { content: "🔴 "; }
+
+        @media (max-width: 600px) {
+             .summary-stats {
+                 font-size: 14px;
+                 gap: 10px;
+             }
+             .bar-label {
+                 width: 100px;
+                 font-size: 12px;
+             }
+             .bar-chart li {
+                  height: 22px;
+                  font-size: 12px;
+             }
+            .bar-flag {
+                font-size: 16px;
+            }
+            .bar-value {
+                 font-size: 10px;
+             }
+        }
+
+    </style>
+</head>
+<body>
+    <button class="back-button" id="backButton">← Natrag na brojač</button>
+    <h1>Grafički Prikazi</h1>
+
+    <!-- Overall Summary -->
+    <div class="chart-container">
+        <h2>Ukupna Statistika</h2>
+        <div class="summary-stats" id="summaryStats">
+            <!-- Stats will be loaded here -->
+            <p>Učitavanje...</p>
+        </div>
+    </div>
+    <div class="chart-container">
+  <h2>Interaktivna karta svijeta</h2>
+  <div id="map" style="height: 500px; width: 100%; border: 1px solid #ccc;"></div>
+</div>
+
+
+    <!-- Wrapper for Side-by-Side Bar Charts -->
+    <div class="chart-row">
+        <!-- Top 10 Most Played -->
+        <div class="chart-container chart-half">
+            <h2>Top 10 - Najviše odigranih</h2>
+            <ul class="bar-chart total-matches" id="mostPlayedChart">
+                <li>Učitavanje...</li>
+            </ul>
+        </div>
+
+        <!-- Top 10 Win Percentage -->
+        <div class="chart-container chart-half">
+            <h2>Top 10 - % Pobjeda</h2>
+            <p class="min-games-note">(Min. 5 partija)</p>
+            <ul class="bar-chart win-percentage" id="winPercentageChart">
+                <li>Učitavanje...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Continent Pie Charts -->
+    <div class="chart-container">
+        <h2>Statistika po Kontinentima (Pobjede/Remi/Porazi)</h2>
+        <div class="pie-chart-grid" id="continentPieCharts">
+            <!-- Pie charts will be loaded here -->
+            <p>Učitavanje...</p>
+        </div>
+    </div>
+
+    <!-- International Pie Chart -->
+    <div class="chart-container">
+        <h2>Statistika - International</h2>
+        <div class="pie-chart-grid" id="internationalPieChartContainer">
+            <!-- International pie chart will be loaded here -->
+            <p>Učitavanje...</p>
+        </div>
+    </div>
+
+    <!-- Win/Loss Ratios -->
+     <div class="chart-container">
+         <h2>Omjeri Pobjeda/Poraza (po Državi)</h2>
+         <ul class="ratio-list" id="winLossRatios">
+             <!-- Ratios will be loaded here -->
+             <li>Učitavanje...</li>
+         </ul>
+     </div>
+
+    <script>
+        // Copy country list or load from shared source if available
+        const allCountriesInfo = [
+        { name: "Afganistan", flag: "🇦🇫" },
+            { name: "Albanija", flag: "🇦🇱" },
+            { name: "Alžir", flag: "🇩🇿" },
+            { name: "Andora", flag: "🇦🇩" },
+            { name: "Angola", flag: "🇦🇴" },
+            { name: "Antigva i Barbuda", flag: "🇦🇬" },
+            { name: "Argentina", flag: "🇦🇷" },
+            { name: "Armenija", flag: "🇦🇲" },
+            { name: "Australija", flag: "🇦🇺" },
+            { name: "Austrija", flag: "🇦🇹" },
+            { name: "Azerbajdžan", flag: "🇦🇿" },
+            { name: "Bahami", flag: "🇧🇸" },
+            { name: "Bahrein", flag: "🇧🇭" },
+            { name: "Bangladeš", flag: "🇧🇩" },
+            { name: "Barbados", flag: "🇧🇧" },
+            { name: "Belgija", flag: "🇧🇪" },
+            { name: "Belize", flag: "🇧🇿" },
+            { name: "Benin", flag: "🇧🇯" },
+            { name: "Bjelorusija", flag: "🇧🇾" },
+            { name: "Bolivija", flag: "🇧🇴" },
+            { name: "Bosna i Hercegovina", flag: "🇧🇦" },
+            { name: "Bocvana", flag: "🇧🇼" },
+            { name: "Brazil", flag: "🇧🇷" },
+            { name: "Brunej", flag: "🇧🇳" },
+            { name: "Bugarska", flag: "🇧🇬" },
+            { name: "Burkina Faso", flag: "🇧🇫" },
+            { name: "Burundi", flag: "🇧🇮" },
+            { name: "Butan", flag: "🇧🇹" },
+            { name: "Cipar", flag: "🇨🇾" },
+            { name: "Crna Gora", flag: "🇲🇪" },
+            { name: "Čad", flag: "🇹🇩" },
+            { name: "Češka", flag: "🇨🇿" },
+            { name: "Čile", flag: "🇨🇱" },
+            { name: "Danska", flag: "🇩🇰" },
+            { name: "Dominika", flag: "🇩🇲" },
+            { name: "Dominikanska Republika", flag: "🇩🇴" },
+            { name: "Džibuti", flag: "🇩🇯" },
+            { name: "Egipat", flag: "🇪🇬" },
+            { name: "Ekvador", flag: "🇪🇨" },
+            { name: "Ekvatorijalna Gvineja", flag: "🇬🇶" },
+            { name: "Eritreja", flag: "🇪🇷" },
+            { name: "Estonija", flag: "🇪🇪" },
+            { name: "Esvatini", flag: "🇸🇿" },
+            { name: "Etiopija", flag: "🇪🇹" },
+            { name: "Fidži", flag: "🇫🇯" },
+            { name: "Filipini", flag: "🇵🇭" },
+            { name: "Finska", flag: "🇫🇮" },
+            { name: "Francuska", flag: "🇫🇷" },
+            { name: "Gabon", flag: "🇬🇦" },
+            { name: "Gambija", flag: "🇬🇲" },
+            { name: "Gana", flag: "🇬🇭" },
+            { name: "Grčka", flag: "🇬🇷" },
+            { name: "Grenada", flag: "🇬🇩" },
+            { name: "Gruzija", flag: "🇬🇪" },
+            { name: "Gvajana", flag: "🇬🇾" },
+            { name: "Gvatemala", flag: "🇬🇹" },
+            { name: "Gvineja", flag: "🇬🇳" },
+            { name: "Gvineja Bisau", flag: "🇬🇼" },
+            { name: "Haiti", flag: "🇭🇹" },
+            { name: "Honduras", flag: "🇭🇳" },
+            { name: "Hrvatska", flag: "🇭🇷" },
+            { name: "Indija", flag: "🇮🇳" },
+            { name: "Indonezija", flag: "🇮🇩" },
+            { name: "Irak", flag: "🇮🇶" },
+            { name: "Iran", flag: "🇮🇷" },
+            { name: "Irska", flag: "🇮🇪" },
+            { name: "Island", flag: "🇮🇸" },
+            { name: "Italija", flag: "🇮🇹" },
+            { name: "Izrael", flag: "🇮🇱" },
+            { name: "Jamajka", flag: "🇯🇲" },
+            { name: "Japan", flag: "🇯🇵" },
+            { name: "Jemen", flag: "🇾🇪" },
+            { name: "Jordan", flag: "🇯🇴" },
+            { name: "Južna Koreja", flag: "🇰🇷" },
+            { name: "Južna Afrika", flag: "🇿🇦" },
+            { name: "Južni Sudan", flag: "🇸🇸" },
+            { name: "Kambodža", flag: "🇰🇭" },
+            { name: "Kamerun", flag: "🇨🇲" },
+            { name: "Kanada", flag: "🇨🇦" },
+            { name: "Katar", flag: "🇶🇦" },
+            { name: "Kazahstan", flag: "🇰🇿" },
+            { name: "Kenija", flag: "🇰🇪" },
+            { name: "Kina", flag: "🇨🇳" },
+            { name: "Kipar", flag: "🇨🇾" },
+            { name: "Kirgistan", flag: "🇰🇬" },
+            { name: "Kiribati", flag: "🇰🇮" },
+            { name: "Kolumbija", flag: "🇨🇴" },
+            { name: "Komori", flag: "🇰🇲" },
+            { name: "Kongo", flag: "🇨🇬" },
+            { name: "Kongo, Demokratska Republika", flag: "🇨🇩" },
+            { name: "Kostarika", flag: "🇨🇷" },
+            { name: "Kuba", flag: "🇨🇺" },
+            { name: "Kuvajt", flag: "🇰🇼" },
+            { name: "Kosovo", flag: "🇽🇰" },
+            { name: "Laos", flag: "🇱🇦" },
+            { name: "Latvija", flag: "🇱🇻" },
+            { name: "Lesoto", flag: "🇱🇸" },
+            { name: "Libanon", flag: "🇱🇧" },
+            { name: "Liberija", flag: "🇱🇷" },
+            { name: "Libija", flag: "🇱🇾" },
+            { name: "Lihtenštajn", flag: "🇱🇮" },
+            { name: "Litva", flag: "🇱🇹" },
+            { name: "Luksemburg", flag: "🇱🇺" },
+            { name: "Madagaskar", flag: "🇲🇬" },
+            { name: "Mađarska", flag: "🇭🇺" },
+            { name: "Malavi", flag: "🇲🇼" },
+            { name: "Maldivi", flag: "🇲🇻" },
+            { name: "Malezija", flag: "🇲🇾" },
+            { name: "Mali", flag: "🇲🇱" },
+            { name: "Malta", flag: "🇲🇹" },
+            { name: "Maroko", flag: "🇲🇦" },
+            { name: "Marshallovi Otoci", flag: "🇲🇭" },
+            { name: "Mauricijus", flag: "🇲🇺" },
+            { name: "Mauritanija", flag: "🇲🇷" },
+            { name: "Meksiko", flag: "🇲🇽" },
+            { name: "Mikronezija", flag: "🇫🇲" },
+            { name: "Mjanmar", flag: "🇲🇲" },
+            { name: "Moldavija", flag: "🇲🇩" },
+            { name: "Monako", flag: "🇲🇨" },
+            { name: "Mongolija", flag: "🇲🇳" },
+            { name: "Mozambik", flag: "🇲🇿" },
+            { name: "Namibija", flag: "🇳🇦" },
+            { name: "Nauru", flag: "🇳🇷" },
+            { name: "Nepal", flag: "🇳🇵" },
+            { name: "Niger", flag: "🇳🇪" },
+            { name: "Nigerija", flag: "🇳🇬" },
+            { name: "Nikaragva", flag: "🇳🇮" },
+            { name: "Nizozemska", flag: "🇳🇱" },
+            { name: "Norveška", flag: "🇳🇴" },
+            { name: "Novi Zeland", flag: "🇳🇿" },
+            { name: "Njemačka", flag: "🇩🇪" },
+            { name: "Oman", flag: "🇴🇲" },
+            { name: "Pakistan", flag: "🇵🇰" },
+            { name: "Palau", flag: "🇵🇼" },
+            { name: "Panama", flag: "🇵🇦" },
+            { name: "Papua Nova Gvineja", flag: "🇵🇬" },
+            { name: "Paragvaj", flag: "🇵🇾" },
+            { name: "Peru", flag: "🇵🇪" },
+            { name: "Palestina", flag: "🇵🇸" },
+            { name: "Poljska", flag: "🇵🇱" },
+            { name: "Portugal", flag: "🇵🇹" },
+            { name: "Ruanda", flag: "🇷🇼" },
+            { name: "Rumunjska", flag: "🇷🇴" },
+            { name: "Rusija", flag: "🇷🇺" },
+            { name: "Salomonovi Otoci", flag: "🇸🇧" },
+            { name: "Salvador", flag: "🇸🇻" },
+            { name: "Samoa", flag: "🇼🇸" },
+            { name: "San Marino", flag: "🇸🇲" },
+            { name: "Saudijska Arabija", flag: "🇸🇦" },
+            { name: "Sejšeli", flag: "🇸🇨" },
+            { name: "Senegal", flag: "🇸🇳" },
+            { name: "Saint Lucia", flag: "🇱🇨" },
+            { name: "Sijera Leone", flag: "🇸🇱" },
+            { name: "Singapur", flag: "🇸🇬" },
+            { name: "Sirija", flag: "🇸🇾" },
+            { name: "Sjedinjene Američke Države", flag: "🇺🇸" },
+            { name: "Sjeverna Makedonija", flag: "🇲🇰" },
+            { name: "Sjeverna Koreja", flag: "Kim jong un" },
+            { name: "Slovačka", flag: "🇸🇰" },
+            { name: "Slovenija", flag: "🇸🇮" },
+            { name: "Somalija", flag: "🇸🇴" },
+            { name: "Srbija", flag: "🇷🇸" },
+            { name: "Sudan", flag: "🇸🇩" },
+            { name: "Surinam", flag: "🇸🇷" },
+            { name: "Svazi", flag: "🇸🇿" },
+            { name: "Španjolska", flag: "🇪🇸" },
+            { name: "Šri Lanka", flag: "🇱🇰" },
+            { name: "Švedska", flag: "🇸🇪" },
+            { name: "Švicarska", flag: "🇨🇭" },
+            { name: "Škotska", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
+            { name: "Tajland", flag: "🇹🇭" },
+            { name: "Tajvan", flag: "🇹🇼" },
+            { name: "Tanzanija", flag: "🇹🇿" },
+            { name: "Togo", flag: "🇹🇬" },
+            { name: "Tonga", flag: "🇹🇴" },
+            { name: "Trinidad i Tobago", flag: "🇹🇹" },
+            { name: "Tunis", flag: "🇹🇳" },
+            { name: "Turkmenistan", flag: "🇹🇲" },
+            { name: "Turska", flag: "🇹🇷" },
+            { name: "Tuvalu", flag: "🇹🇻" },
+            { name: "Uganda", flag: "🇺🇬" },
+            { name: "Ukrajina", flag: "🇺🇦" },
+            { name: "Ujedinjeni Arapski Emirati", flag: "🇦🇪" },
+            { name: "Ujedinjeno Kraljevstvo", flag: "🇬🇧" },
+            { name: "Urugvaj", flag: "🇺🇾" },
+            { name: "Uzbekistan", flag: "🇺🇿" },
+            { name: "Vanuatu", flag: "🇻🇺" },
+            { name: "Vatikan", flag: "🇻🇦" },
+            { name: "Wales", flag: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+            { name: "Venezuela", flag: "🇻🇪" },
+            { name: "Vijetnam", flag: "🇻🇳" },
+            { name: "Zambija", flag: "🇿🇲" },
+            { name: "Zelenortska Republika", flag: "🇨🇻" },
+            { name: "Zimbabve", flag: "🇿🇼" },
+            { name: "International", flag: "🏳️" }
+            ];
+
+const countryContinents = {
+    "Afganistan": "Azija", "Albanija": "Europa", "Alžir": "Afrika", "Andora": "Europa", "Angola": "Afrika",
+    "Antigva i Barbuda": "Sjeverna Amerika", "Argentina": "Južna Amerika", "Armenija": "Azija", "Australija": "Oceanija",
+    "Austrija": "Europa", "Azerbajdžan": "Azija", "Bahami": "Sjeverna Amerika", "Bahrein": "Azija", "Bangladeš": "Azija",
+    "Barbados": "Sjeverna Amerika", "Belgija": "Europa", "Belize": "Sjeverna Amerika", "Benin": "Afrika",
+    "Bjelorusija": "Europa", "Bolivija": "Južna Amerika", "Bosna i Hercegovina": "Europa", "Bocvana": "Afrika",
+    "Brazil": "Južna Amerika", "Brunej": "Azija", "Bugarska": "Europa", "Burkina Faso": "Afrika", "Burundi": "Afrika",
+    "Butan": "Azija", "Cipar": "Azija", // Geographically Asia, culturally/politically often Europe
+    "Crna Gora": "Europa", "Čad": "Afrika", "Češka": "Europa", "Čile": "Južna Amerika", "Danska": "Europa",
+    "Dominika": "Sjeverna Amerika", "Dominikanska Republika": "Sjeverna Amerika", "Džibuti": "Afrika", "Egipat": "Afrika", // Egypt spans Africa and Asia
+    "Ekvador": "Južna Amerika", "Ekvatorijalna Gvineja": "Afrika", "Eritreja": "Afrika", "Estonija": "Europa",
+    "Esvatini": "Afrika", "Etiopija": "Afrika", "Fidži": "Oceanija", "Filipini": "Azija", "Finska": "Europa",
+    "Francuska": "Europa", "Gabon": "Afrika", "Gambija": "Afrika", "Gana": "Afrika", "Grčka": "Europa",
+    "Grenada": "Sjeverna Amerika", "Gruzija": "Azija", // Spans Europe and Asia
+    "Gvajana": "Južna Amerika", "Gvatemala": "Sjeverna Amerika", "Gvineja": "Afrika", "Gvineja Bisau": "Afrika",
+    "Haiti": "Sjeverna Amerika", "Honduras": "Sjeverna Amerika", "Hrvatska": "Europa", "Indija": "Azija",
+    "Indonezija": "Azija", "Irak": "Azija", "Iran": "Azija", "Irska": "Europa", "Island": "Europa", "Italija": "Europa",
+    "Izrael": "Azija", "Jamajka": "Sjeverna Amerika", "Japan": "Azija", "Jemen": "Azija", "Jordan": "Azija",
+    "Južna Koreja": "Azija", "Južna Afrika": "Afrika", "Južni Sudan": "Afrika", "Kambodža": "Azija",
+    "Kamerun": "Afrika", "Kanada": "Sjeverna Amerika", "Katar": "Azija", "Kazahstan": "Azija", // Spans Europe and Asia
+    "Kenija": "Afrika", "Kina": "Azija",
+    "Kirgistan": "Azija", "Kiribati": "Oceanija", "Kolumbija": "Južna Amerika", "Komori": "Afrika", "Kongo": "Afrika",
+    "Kongo, Demokratska Republika": "Afrika", "Kostarika": "Sjeverna Amerika", "Kuba": "Sjeverna Amerika",
+    "Kuvajt": "Azija", "Kosovo": "Europa", "Laos": "Azija", "Latvija": "Europa", "Lesoto": "Afrika",
+    "Libanon": "Azija", "Liberija": "Afrika", "Libija": "Afrika", "Lihtenštajn": "Europa", "Litva": "Europa",
+    "Luksemburg": "Europa", "Madagaskar": "Afrika", "Mađarska": "Europa", "Malavi": "Afrika", "Maldivi": "Azija",
+    "Malezija": "Azija", "Mali": "Afrika", "Malta": "Europa", "Maroko": "Afrika", "Marshallovi Otoci": "Oceanija",
+    "Mauricijus": "Afrika", "Mauritanija": "Afrika", "Meksiko": "Sjeverna Amerika", "Mikronezija": "Oceanija",
+    "Mjanmar": "Azija", "Moldavija": "Europa", "Monako": "Europa", "Mongolija": "Azija", "Mozambik": "Afrika",
+    "Namibija": "Afrika", "Nauru": "Oceanija", "Nepal": "Azija", "Niger": "Afrika", "Nigerija": "Afrika",
+    "Nikaragva": "Sjeverna Amerika", "Nizozemska": "Europa", "Norveška": "Europa", "Novi Zeland": "Oceanija",
+    "Njemačka": "Europa", "Oman": "Azija", "Pakistan": "Azija", "Palau": "Oceanija", "Panama": "Sjeverna Amerika",
+    "Papua Nova Gvineja": "Oceanija", "Paragvaj": "Južna Amerika", "Peru": "Južna Amerika", "Palestina": "Azija",
+    "Poljska": "Europa", "Portugal": "Europa", "Ruanda": "Afrika", "Rumunjska": "Europa", "Rusija": "Europa", // Spans Europe and Asia
+    "Salomonovi Otoci": "Oceanija", "Salvador": "Sjeverna Amerika", "Samoa": "Oceanija", "San Marino": "Europa",
+    "Saudijska Arabija": "Azija", "Sejšeli": "Afrika", "Senegal": "Afrika", "Saint Lucia": "Sjeverna Amerika",
+    "Sijera Leone": "Afrika", "Singapur": "Azija", "Sirija": "Azija", "Sjedinjene Američke Države": "Sjeverna Amerika",
+    "Sjeverna Makedonija": "Europa", "Sjeverna Koreja": "Azija", "Slovačka": "Europa", "Slovenija": "Europa",
+    "Somalija": "Afrika", "Srbija": "Europa", "Sudan": "Afrika", "Surinam": "Južna Amerika", "Esvatini": "Afrika", // Esvatini
+    "Španjolska": "Europa", "Šri Lanka": "Azija", "Švedska": "Europa", "Švicarska": "Europa", "Škotska": "Europa",
+    "Tajland": "Azija", "Tajvan": "Azija", "Tanzanija": "Afrika", "Togo": "Afrika", "Tonga": "Oceanija",
+    "Trinidad i Tobago": "Južna Amerika", "Tunis": "Afrika", "Turkmenistan": "Azija", "Turska": "Azija", // Spans Europe and Asia
+    "Tuvalu": "Oceanija", "Uganda": "Afrika", "Ukrajina": "Europa", "Ujedinjeni Arapski Emirati": "Azija",
+    "Ujedinjeno Kraljevstvo": "Europa", "Urugvaj": "Južna Amerika", "Uzbekistan": "Azija", "Vanuatu": "Oceanija",
+    "Vatikan": "Europa", "Wales": "Europa", "Venezuela": "Južna Amerika", "Vijetnam": "Azija", "Zambija": "Afrika",
+    "Zelenortska Republika": "Afrika", "Zimbabve": "Afrika", "International": "Nepoznato"
+};
+const geoJsonToLocalNames = {
+  "Afghanistan": "Afganistan",
+  "Albania": "Albanija",
+  "Algeria": "Alžir",
+  "Andorra": "Andora",
+  "Angola": "Angola",
+  "Antigua and Barbuda": "Antigva i Barbuda",
+  "Argentina": "Argentina",
+  "Armenia": "Armenija",
+  "Australia": "Australija",
+  "Austria": "Austrija",
+  "Azerbaijan": "Azerbajdžan",
+  "Bahamas": "Bahami",
+  "Bahrain": "Bahrein",
+  "Bangladesh": "Bangladeš",
+  "Barbados": "Barbados",
+  "Belgium": "Belgija",
+  "Belize": "Belize",
+  "Benin": "Benin",
+  "Bhutan": "Butan",
+  "Bolivia": "Bolivija",
+  "Bosnia and Herzegovina": "Bosna i Hercegovina",
+  "Botswana": "Bocvana",
+  "Brazil": "Brazil",
+  "Brunei": "Brunej",
+  "Bulgaria": "Bugarska",
+  "Burkina Faso": "Burkina Faso",
+  "Burundi": "Burundi",
+  "Cambodia": "Kambodža",
+  "Cameroon": "Kamerun",
+  "Canada": "Kanada",
+  "Cape Verde": "Zelenortska Republika",
+  "Central African Republic": "Srednjoafrička Republika",
+  "Chad": "Čad",
+  "Chile": "Čile",
+  "China": "Kina",
+  "Colombia": "Kolumbija",
+  "Comoros": "Komori",
+  "Congo": "Kongo",
+  "Democratic Republic of the Congo": "Kongo, Demokratska Republika",
+  "Costa Rica": "Kostarika",
+  "Croatia": "Hrvatska",
+  "Cuba": "Kuba",
+  "Cyprus": "Cipar",
+  "Czech Republic": "Češka",
+  "Denmark": "Danska",
+  "Djibouti": "Džibuti",
+  "Dominica": "Dominika",
+  "Dominican Republic": "Dominikanska Republika",
+  "Ecuador": "Ekvador",
+  "Egypt": "Egipat",
+  "El Salvador": "Salvador",
+  "Equatorial Guinea": "Ekvatorijalna Gvineja",
+  "Eritrea": "Eritreja",
+  "Estonia": "Estonija",
+  "Eswatini": "Esvatini",
+  "Ethiopia": "Etiopija",
+  "Fiji": "Fidži",
+  "Finland": "Finska",
+  "France": "Francuska",
+  "Gabon": "Gabon",
+  "Gambia": "Gambija",
+  "Georgia": "Gruzija",
+  "Germany": "Njemačka",
+  "Ghana": "Gana",
+  "Greece": "Grčka",
+  "Grenada": "Grenada",
+  "Guatemala": "Gvatemala",
+  "Guinea": "Gvineja",
+  "Guinea-Bissau": "Gvineja Bisau",
+  "Guyana": "Gvajana",
+  "Haiti": "Haiti",
+  "Honduras": "Honduras",
+  "Hungary": "Mađarska",
+  "Iceland": "Island",
+  "India": "Indija",
+  "Indonesia": "Indonezija",
+  "Iran": "Iran",
+  "Iraq": "Irak",
+  "Ireland": "Irska",
+  "Israel": "Izrael",
+  "Italy": "Italija",
+  "Ivory Coast": "Obala Bjelokosti",
+  "Jamaica": "Jamajka",
+  "Japan": "Japan",
+  "Jordan": "Jordan",
+  "Kazakhstan": "Kazahstan",
+  "Kenya": "Kenija",
+  "Kiribati": "Kiribati",
+  "North Korea": "Sjeverna Koreja",
+  "South Korea": "Južna Koreja",
+  "Kuwait": "Kuvajt",
+  "Kyrgyzstan": "Kirgistan",
+  "Laos": "Laos",
+  "Latvia": "Latvija",
+  "Lebanon": "Libanon",
+  "Lesotho": "Lesoto",
+  "Liberia": "Liberija",
+  "Libya": "Libija",
+  "Liechtenstein": "Lihtenštajn",
+  "Lithuania": "Litva",
+  "Luxembourg": "Luksemburg",
+  "Madagascar": "Madagaskar",
+  "Malawi": "Malavi",
+  "Malaysia": "Malezija",
+  "Maldives": "Maldivi",
+  "Mali": "Mali",
+  "Malta": "Malta",
+  "Marshall Islands": "Marshallovi Otoci",
+  "Mauritania": "Mauritanija",
+  "Mauritius": "Mauricijus",
+  "Mexico": "Meksiko",
+  "Micronesia": "Mikronezija",
+  "Moldova": "Moldavija",
+  "Monaco": "Monako",
+  "Mongolia": "Mongolija",
+  "Montenegro": "Crna Gora",
+  "Morocco": "Maroko",
+  "Mozambique": "Mozambik",
+  "Myanmar": "Mjanmar",
+  "Namibia": "Namibija",
+  "Nauru": "Nauru",
+  "Nepal": "Nepal",
+  "Netherlands": "Nizozemska",
+  "New Zealand": "Novi Zeland",
+  "Nicaragua": "Nikaragva",
+  "Niger": "Niger",
+  "Nigeria": "Nigerija",
+  "North Macedonia": "Sjeverna Makedonija",
+  "Norway": "Norveška",
+  "Oman": "Oman",
+  "Pakistan": "Pakistan",
+  "Palau": "Palau",
+  "Palestine": "Palestina",
+  "Panama": "Panama",
+  "Papua New Guinea": "Papua Nova Gvineja",
+  "Paraguay": "Paragvaj",
+  "Peru": "Peru",
+  "Philippines": "Filipini",
+  "Poland": "Poljska",
+  "Portugal": "Portugal",
+  "Qatar": "Katar",
+  "Romania": "Rumunjska",
+  "Russia": "Rusija",
+  "Rwanda": "Ruanda",
+  "Saint Lucia": "Saint Lucia",
+  "Samoa": "Samoa",
+  "San Marino": "San Marino",
+  "Saudi Arabia": "Saudijska Arabija",
+  "Senegal": "Senegal",
+  "Serbia": "Srbija",
+  "Seychelles": "Sejšeli",
+  "Sierra Leone": "Sijera Leone",
+  "Singapore": "Singapur",
+  "Slovakia": "Slovačka",
+  "Slovenia": "Slovenija",
+  "Solomon Islands": "Salomonovi Otoci",
+  "Somalia": "Somalija",
+  "South Africa": "Južna Afrika",
+  "South Sudan": "Južni Sudan",
+  "Spain": "Španjolska",
+  "Sri Lanka": "Šri Lanka",
+  "Sudan": "Sudan",
+  "Suriname": "Surinam",
+  "Sweden": "Švedska",
+  "Switzerland": "Švicarska",
+  "Syria": "Sirija",
+  "Taiwan": "Tajvan",
+  "Tajikistan": "Tadžikistan",
+  "Tanzania": "Tanzanija",
+  "Thailand": "Tajland",
+  "Timor-Leste": "Istočni Timor",
+  "Togo": "Togo",
+  "Tonga": "Tonga",
+  "Trinidad and Tobago": "Trinidad i Tobago",
+  "Tunisia": "Tunis",
+  "Turkey": "Turska",
+  "Turkmenistan": "Turkmenistan",
+  "Tuvalu": "Tuvalu",
+  "Uganda": "Uganda",
+  "Ukraine": "Ukrajina",
+  "United Arab Emirates": "Ujedinjeni Arapski Emirati",
+  "United Kingdom": "Ujedinjeno Kraljevstvo",
+  "United States of America": "Sjedinjene Američke Države",
+  "Uruguay": "Urugvaj",
+  "Uzbekistan": "Uzbekistan",
+  "Vanuatu": "Vanuatu",
+  "Vatican City": "Vatikan",
+  "Venezuela": "Venezuela",
+  "Vietnam": "Vijetnam",
+  "Yemen": "Jemen",
+  "Zambia": "Zambija",
+  "Zimbabwe": "Zimbabve"
+};
+
+
+// Map za brzi dohvat zastave po imenu države
+        const countryFlags = allCountriesInfo.reduce((map, country) => {
+            map[country.name] = country.flag;
+            return map;
+        }, {});
+
+        // Učitavanje podataka iz localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('countryTallyData');
+            return savedData ? JSON.parse(savedData) : {};
+        }
+
+        // Izračunavanje statistika i priprema podataka za grafikone
+        function processStats(tallyData) {
+            let totalWins = 0;
+            let totalDraws = 0;
+            let totalLosses = 0;
+            let totalMatchesOverall = 0;
+            const countryStats = []; // Array to hold stats for each country
+            const continentStats = {}; // Object to hold aggregated stats for each continent
+
+             // Initialize continentStats based on the unique continent names in the map
+             const uniqueContinents = [...new Set(Object.values(countryContinents))];
+             uniqueContinents.forEach(continent => {
+                 continentStats[continent] = { name: continent, wins: 0, draws: 0, losses: 0, total: 0 };
+             });
+             // Ensure 'Nepoznato' exists for unmapped countries
+             if (!continentStats['Nepoznato']) {
+                 continentStats['Nepoznato'] = { name: 'Nepoznato', wins: 0, draws: 0, losses: 0, total: 0 };
+             }
+
+            // --- Single Pass: Calculate country stats, overall totals, and continent stats ---
+            for (const countryName in tallyData) {
+                if (tallyData.hasOwnProperty(countryName)) {
+                    const data = tallyData[countryName];
+                    const totalMatches = data.wins + data.draws + data.losses;
+
+                    // Skip country if no matches played
+                    if (totalMatches === 0) continue;
+
+                    const winPercentage = (data.wins / totalMatches) * 100;
+                    const flag = countryFlags[countryName] || '🏳️';
+                    const continent = countryContinents[countryName] || 'Nepoznato';
+
+                    // Accumulate overall totals (only once per country)
+                    totalWins += data.wins;
+                    totalDraws += data.draws;
+                    totalLosses += data.losses;
+                    totalMatchesOverall += totalMatches;
+
+                    // Add to countryStats array (only once per country)
+                    countryStats.push({
+                        name: countryName,
+                        flag: flag,
+                        wins: data.wins,
+                        draws: data.draws,
+                        losses: data.losses,
+                        totalMatches: totalMatches,
+                        winPercentage: parseFloat(winPercentage.toFixed(1))
+                    });
+
+                    // Accumulate continent stats (only once per country)
+                     // Check if continent exists (it should due to initialization)
+                    if (continentStats[continent]) {
+                        continentStats[continent].wins += data.wins;
+                        continentStats[continent].draws += data.draws;
+                        continentStats[continent].losses += data.losses;
+                        continentStats[continent].total += totalMatches;
+                    }
+                }
+            }
+
+            // Filter out continents with no matches directly from the continentStats object
+             const finalContinentStats = Object.fromEntries(
+                 Object.entries(continentStats).filter(([_, stats]) => stats.total > 0)
+             );
+
+            return {
+                overall: { wins: totalWins, draws: totalDraws, losses: totalLosses, total: totalMatchesOverall },
+                countries: countryStats, // This now has only one entry per country
+                continents: finalContinentStats,
+                international: tallyData["International"] ? {
+                    name: "International",
+                    wins: tallyData["International"].wins || 0,
+                    draws: tallyData["International"].draws || 0,
+                    losses: tallyData["International"].losses || 0,
+                    total: (tallyData["International"].wins || 0) + (tallyData["International"].draws || 0) + (tallyData["International"].losses || 0)
+                } : null
+            };
+        }
+
+        // Generiranje CSS bar chart-a
+        function generateBarChart(containerId, data, valueKey, labelKey = 'name', unit = '', minMatchesThreshold = 0) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear loading indicator
+
+            const filteredData = data
+                .filter(item => item.totalMatches >= minMatchesThreshold) // Filter by minimum matches if needed
+                .sort((a, b) => b[valueKey] - a[valueKey]) // Sort descending by the value key
+                .slice(0, 10); // Take top 10
+
+            if (filteredData.length === 0) {
+                 container.innerHTML = '<li>Nema dovoljno podataka za prikaz.</li>';
+                 return;
+             }
+
+            const maxValue = filteredData[0][valueKey]; // Max value for scaling
+
+            filteredData.forEach(item => {
+                const li = document.createElement('li');
+                const barWidth = maxValue > 0 ? (item[valueKey] / maxValue * 100) : 0;
+
+                // Determine if value text fits inside the bar
+                const valueText = item[valueKey] + unit;
+                let valueClass = "bar-value";
+                // Simple check: if bar is very small, put text outside
+                // This logic can be improved based on actual text length and bar width
+                 if (barWidth < 15 && valueText.length > 2) {
+                     valueClass += " outside"; // You might need CSS for .bar-value.outside
+                 }
+
+
+                li.innerHTML = `
+                    <span class="bar-label">${item[labelKey]}</span>
+                    <div class="bar-wrapper">
+                        <span class="bar" style="width: ${barWidth}%;"></span>
+                        <span class="${valueClass}">${valueText}</span>
+                    </div>
+                    <span class="bar-flag">${item.flag}</span>
+                `;
+                container.appendChild(li);
+            });
+        }
+
+        // --- Glavna logika ---
+        const tallyData = loadData();
+        const stats = processStats(tallyData);
+
+        // Prikaz ukupne statistike
+        const summaryContainer = document.getElementById('summaryStats');
+        summaryContainer.innerHTML = `
+            <div><span class="win">${stats.overall.wins}</span>Pobjeda</div>
+            <div><span class="draw">${stats.overall.draws}</span>Remija</div>
+            <div><span class="loss">${stats.overall.losses}</span>Izgubljenih</div>
+            <div><span class="total">${stats.overall.total}</span>Ukupno</div>
+        `;
+
+        // Generiraj grafikone
+        generateBarChart('mostPlayedChart', stats.countries, 'totalMatches');
+        generateBarChart('winPercentageChart', stats.countries, 'winPercentage', 'name', '%', 5); // Min 5 games for win%
+
+        // --- Generiranje Omjera Pobjeda/Poraza ---
+        function displayWinLossRatios(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear loading indicator
+
+            const relevantCountries = data
+                .filter(item => item.wins > 0 || item.losses > 0) // Only countries with wins or losses
+                .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
+
+            if (relevantCountries.length === 0) {
+                container.innerHTML = '<li>Nema podataka o pobjedama ili porazima.</li>';
+                return;
+            }
+
+            relevantCountries.forEach(item => {
+                const li = document.createElement('li');
+                let ratioMessage = '';
+                let ratioClass = '';
+
+                if (item.wins > item.losses) {
+                    ratioMessage = `Vodite <span class="leading">${item.wins}</span> naprama ${item.losses}`;
+                    ratioClass = "leading";
+                } else if (item.losses > item.wins) {
+                    ratioMessage = `Gubite ${item.wins} naprama <span class="trailing">${item.losses}</span>`;
+                     ratioClass = "trailing";
+                } else { // item.wins === item.losses
+                    ratioMessage = `Neriješeno <span class="even">${item.wins}</span> naprama ${item.losses}`;
+                    ratioClass = "even";
+                }
+
+                li.innerHTML = `
+                    <span class="ratio-flag">${item.flag}</span>
+                    <span class="ratio-text">
+                       <span class="country-name">${item.name}</span>: ${ratioMessage}
+                    </span>
+                `;
+                container.appendChild(li);
+            });
+        }
+
+        // Prikaz omjera
+        displayWinLossRatios('winLossRatios', stats.countries);
+
+
+        // --- Generiranje Pie Chartova po Kontinentima ---
+        function displayContinentPieCharts(containerId, continentData) {
+             const container = document.getElementById(containerId);
+             container.innerHTML = ''; // Clear loading
+
+             const sortedContinents = Object.entries(continentData)
+                 .sort(([nameA], [nameB]) => nameA.localeCompare(nameB)); // Sort continents alphabetically
+
+             if (sortedContinents.length === 0) {
+                 container.innerHTML = '<p>Nema podataka po kontinentima.</p>';
+                 return;
+             }
+
+             sortedContinents.forEach(([continentName, data]) => {
+                 if (data.total === 0) return; // Skip if no matches for this continent
+
+                 const winPercent = (data.wins / data.total) * 100;
+                 const drawPercent = (data.draws / data.total) * 100;
+                 // Loss percentage is the remainder, handled by the gradient
+
+                 const winEnd = winPercent;
+                 const drawEnd = winPercent + drawPercent;
+
+                 // Create the conic gradient string
+                 // Use color variables or hex codes directly
+                 const gradient = `conic-gradient(
+                     green 0% ${winEnd.toFixed(1)}%,
+                     orange ${winEnd.toFixed(1)}% ${drawEnd.toFixed(1)}%,
+                     red ${drawEnd.toFixed(1)}% 100%
+                 )`;
+
+                 const pieContainer = document.createElement('div');
+                 pieContainer.className = 'pie-container';
+
+                 pieContainer.innerHTML = `
+                     <div class="pie-label">${continentName} (${data.total})</div>
+                     <div class="pie-chart" style="background: ${gradient};"></div>
+                     <ul class="pie-legend">
+                         <li class="win">${data.wins} Pobjeda (${winPercent.toFixed(1)}%)</li>
+                         <li class="draw">${data.draws} Remija (${drawPercent.toFixed(1)}%)</li>
+                         <li class="loss">${data.losses} Poraza (${(100 - winEnd - drawPercent).toFixed(1)}%)</li>
+                     </ul>
+                 `;
+                 container.appendChild(pieContainer);
+             });
+         }
+
+        // Prikaz Pie Chartova
+        displayContinentPieCharts('continentPieCharts', stats.continents);
+
+        // --- Generiranje Pie Charta za "International" ---
+        function displaySingleCountryPieChart(containerId, countryData, countryName = "Država") {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear loading
+
+            if (!countryData || countryData.total === 0) {
+                container.innerHTML = `<p>Nema podataka za ${countryName}.</p>`;
+                return;
+            }
+
+            const data = countryData;
+            const winPercent = (data.wins / data.total) * 100;
+            const drawPercent = (data.draws / data.total) * 100;
+            const lossPercent = (data.losses / data.total) * 100;
+
+            const winEnd = winPercent;
+            const drawEnd = winPercent + drawPercent;
+
+            const gradient = `conic-gradient(
+                green 0% ${winEnd.toFixed(1)}%,
+                orange ${winEnd.toFixed(1)}% ${drawEnd.toFixed(1)}%,
+                red ${drawEnd.toFixed(1)}% 100%
+            )`;
+
+            const pieContainer = document.createElement('div');
+            pieContainer.className = 'pie-container'; // Reuse existing styling
+
+            pieContainer.innerHTML = `
+                <div class="pie-label">${countryName} (${data.total})</div>
+                <div class="pie-chart" style="background: ${gradient};"></div>
+                <ul class="pie-legend">
+                    <li class="win">${data.wins} Pobjeda (${winPercent.toFixed(1)}%)</li>
+                    <li class="draw">${data.draws} Remija (${drawPercent.toFixed(1)}%)</li>
+                    <li class="loss">${data.losses} Poraza (${lossPercent.toFixed(1)}%)</li>
+                </ul>
+            `;
+            // Since pie-chart-grid expects multiple items, we wrap it or adjust CSS
+            // For simplicity, we'll just append. It might look a bit off if it's the only item in a grid.
+            // Consider adjusting the CSS for #internationalPieChartContainer if it only contains one chart.
+            container.appendChild(pieContainer);
+        }
+
+        // Prikaz Pie Charta za International
+        if (stats.international) {
+            displaySingleCountryPieChart('internationalPieChartContainer', stats.international, 'International');
+        } else {
+            document.getElementById('internationalPieChartContainer').innerHTML = '<p>Nema podataka za International.</p>';
+        }
+
+        // Event listener za gumb Natrag
+        document.getElementById('backButton').addEventListener('click', () => {
+            window.location.href = 'tally counter.html'; // Link back to the main page
+        });
+
+    </script>
+    <script>
+// 1. Inicijalizacija karte
+const map = L.map('map').setView([20, 0], 2); // centrirano na svijet
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 4,
+}).addTo(map);
+
+// 2. Bojanje država prema statistici
+// Bojanje prema postotku pobjeda
+function getColorByWinPercentage(percentage, totalMatches) {
+    if (percentage > 85.71) return '#24B9EF';
+    if (percentage > 71.42) return '#0AB616'; 
+    if (percentage > 57.14) return '#7FF072'; 
+    if (percentage > 42.85) return '#FAEE5A'; 
+    if (percentage > 28.57) return '#F39A6E'; 
+    if (percentage > 14.28) return '#FF735A'; 
+    if (percentage > 0)     return '#F94345'; 
+    if (percentage === 0 && totalMatches > 0) return '#BE1623'; // Red if 0% wins but games played
+    return '#f4f4f4';                                         // Grey (no data or 0% wins with 0 games)
+}
+
+
+// 3. Dohvati statistiku iz localStorage
+const rawStats = localStorage.getItem('countryTallyData');
+const countryStats = rawStats ? JSON.parse(rawStats) : {};
+
+// 4. Učitaj GeoJSON i oboji države
+fetch('countries.geo.json')
+  .then(res => res.json())
+  .then(geojson => {
+    L.geoJSON(geojson, {
+      style: feature => {
+    const geoName = feature.properties.name;
+    const localName = geoJsonToLocalNames[geoName] || geoName; // ako nema prijevod, koristi original
+    const stat = countryStats[localName];
+
+
+    let percentage = 0;
+    let totalMatchesForColor = 0;
+    if (stat) {
+        totalMatchesForColor = stat.wins + stat.draws + stat.losses;
+        percentage = totalMatchesForColor > 0 ? (stat.wins / totalMatchesForColor) * 100 : 0;
+    }
+
+    return {
+        fillColor: getColorByWinPercentage(percentage, totalMatchesForColor),
+        weight: 1,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.8
+    };
+},
+
+      onEachFeature: (feature, layer) => {
+        const geoName = feature.properties.name;
+        const localName = geoJsonToLocalNames[geoName] || geoName; // ako nema prijevod, koristi original
+        const stat = countryStats[localName];
+
+if (stat) {
+          const totalMatches = stat.wins + stat.draws + stat.losses;
+          const winPercentage = totalMatches > 0 ? ((stat.wins / totalMatches) * 100).toFixed(1) : "0.0";
+          const popupContent = `
+            <strong>${localName}</strong><br>
+            ✅ Pobjede: ${stat.wins}<br>
+            🤝 Remiji: ${stat.draws}<br>
+            ❌ Porazi: ${stat.losses}<br>
+            🔢 Ukupno: ${totalMatches}<br>
+            📊 % Pobjeda: ${winPercentage}%
+          `;
+          layer.bindPopup(popupContent);
+} else {
+          layer.bindPopup(`<strong>${localName}</strong><br>Nema podataka`);
+}
+      }
+    }).addTo(map);
+  })
+  .catch(err => {
+    console.error('Greška pri učitavanju GeoJSONa:', err);
+  });
+</script>
+
+</body>
+</html>

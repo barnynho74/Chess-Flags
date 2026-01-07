@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistika - Tally Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto; /* Center content area */
+            /* Remove padding from body */
+            padding: 0; 
+            background-color: #f9f9f9;
+        }
+        .top-navbar {
+            background-color: #333; /* Dark background for navbar */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between; /* Pushes button left, links right */
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: sticky; /* Make navbar sticky */
+            top: 0;
+            z-index: 1000; /* Ensure it stays on top */
+        }
+        .back-button { /* Style moved inside navbar context */
+            padding: 8px 15px;
+            cursor: pointer;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            /* margin-bottom: 20px; Removed - handled by navbar padding */
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+        .back-button:hover {
+            background-color: #d32f2f;
+        }
+        .nav-links a { /* Style for future links */
+             color: #f2f2f2;
+             text-decoration: none;
+             padding: 8px 12px;
+             margin-left: 10px;
+             border-radius: 4px;
+             transition: background-color 0.2s ease;
+        }
+        .nav-links a:hover {
+             background-color: #555;
+        }
+        .main-content {
+             padding: 20px; /* Add padding to main content below navbar */
+             max-width: 1000px; /* Keep content centered */
+             margin: 0 auto; 
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .stats-container {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-filter-container {
+             margin-bottom: 15px; /* Space below search bar */
+             text-align: center; /* Center search bar */
+        }
+        #countrySearch {
+             padding: 8px 12px;
+             font-size: 14px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             width: 50%; /* Adjust width as needed */
+             max-width: 300px;
+             box-sizing: border-box; /* Include padding and border in element's total width and height */
+        }
+        .sort-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .sort-buttons button {
+            padding: 8px 12px;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .sort-buttons button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #e8e8e8;
+        }
+        .flag {
+            font-size: 20px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .win { color: green; font-weight: bold; }
+        .draw { color: orange; font-weight: bold; }
+        .loss { color: red; font-weight: bold; }
+        .percentage { font-weight: bold; }
+        .total-matches { font-weight: bold; }
+
+        .top-lists-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .top-list {
+            flex: 1;
+            min-width: 300px; /* Adjust as needed */
+        }
+
+        @media (max-width: 768px) {
+            .top-lists-container {
+                flex-direction: column;
+            }
+            .top-list {
+                width: 100%;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+            .flag {
+                font-size: 18px;
+            }
+            .back-button, .sort-buttons button, #countrySearch, .nav-links a {
+                 font-size: 12px;
+                 padding: 6px 10px;
+             }
+             .back-button {
+                 /* Ensure button doesn't get too small */
+                 white-space: nowrap; 
+             }
+             #countrySearch {
+                 width: 70%; /* Wider search bar on smaller screens */
+             }
+            }
+        .table-header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px; /* Space between header and table */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 10px;
+        }
+        .filter-container {
+             display: flex;
+             align-items: center;
+             gap: 5px;
+        }
+        .filter-container label {
+            font-size: 14px;
+            color: #555;
+        }
+        .filter-container select {
+            padding: 4px 6px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+             .table-header-controls {
+                 justify-content: center; /* Center items when wrapped */
+             }
+            .filter-container select {
+                 font-size: 12px;
+                 padding: 4px;
+             }
+             .filter-container label {
+                 font-size: 13px;
+             }
+        }
+
+    </style>
+</head>
+<body>
+    <nav class="top-navbar">
+        <button class="back-button" id="backButton">← Natrag na brojač</button>
+        <div class="nav-links">
+            <!-- Links to sections can be added here later if needed -->
+            <!-- Example: <a href="#winPercentageTable">Top %</a> -->
+        </div>
+    </nav>
+    <div class="main-content"> <!-- Wrap main content -->
+        <h1>Statistika odigranih partija</h1>
+
+        <!-- Top 15 Liste -->
+    <div class="top-lists-container">
+        <div class="stats-container top-list">
+            <div class="table-header-controls">
+                 <h2>Top 15 - Najviše pobjeda protiv (%)</h2>
+                 <div class="filter-container">
+                     <label for="minGamesFilterWinPerc">Minimum partija:</label>
+                     <select id="minGamesFilterWinPerc">
+                         <option value="0">Sve (0+)</option>
+                         <option value="3">3+</option>
+                         <option value="5" selected>5+</option> <!-- Default to 5+ -->
+                         <option value="10">10+</option>
+                         <option value="15">15+</option>
+                         <option value="25">25+</option>
+                     </select>
+                 </div>
+            </div>
+            <table id="winPercentageTable"> <!-- Renamed table ID for clarity -->
+                <thead>
+                    <tr>
+                        <th>Država</th>
+                        <th>% Pobjeda</th>
+                        <th>P</th>
+                        <th>R</th>
+                        <th>I</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="stats-container top-list">
+            <h2>Top 15 - Najviše odigranih partija</h2>
+            <table id="topMatchesTable">
+                <thead>
+                    <tr>
+                        <th>Država</th>
+                        <th>Ukupno partija</th>
+                        <th>P</th>
+                        <th>R</th>
+                        <th>I</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Kompletna tablica sa sortiranjem -->
+    <div class="stats-container">
+        <h2>Sve Države</h2>
+        <div class="search-filter-container">
+             <input type="text" id="countrySearch" placeholder="Pretraži državu..." aria-label="Pretraži državu">
+        </div>
+        <div class="sort-buttons">
+            <span>Sortiraj po:</span>
+            <button data-sort="wins">Pobjedama</button>
+            <button data-sort="draws">Remijima</button>
+            <button data-sort="losses">Izgubljenima</button>
+            <button data-sort="totalMatches">Ukupno partija</button>
+            <button data-sort="winPercentage">Postotku pobjeda</button>
+        </div>
+        <table id="allCountriesTable">
+            <thead>
+                <tr>
+                    <th>Država</th> <!-- Removed data-sort="name" -->
+                    <th data-sort="wins">P</th>
+                    <th data-sort="draws">R</th>
+                    <th data-sort="losses">I</th>
+                    <th data-sort="totalMatches">Ukupno</th> 
+                    <th data-sort="winPercentage">% Pobjeda</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Lista svih država s zastavama (treba biti ista kao u index.html)
+        // Može se i učitati iz JSON-a ili dijeliti na neki drugi način
+        const allCountriesInfo = [
+        { name: "Afganistan", flag: "🇦🇫" },
+            { name: "Albanija", flag: "🇦🇱" },
+            { name: "Alžir", flag: "🇩🇿" },
+            { name: "Andora", flag: "🇦🇩" },
+            { name: "Angola", flag: "🇦🇴" },
+            { name: "Antigva i Barbuda", flag: "🇦🇬" },
+            { name: "Argentina", flag: "🇦🇷" },
+            { name: "Armenija", flag: "🇦🇲" },
+            { name: "Australija", flag: "🇦🇺" },
+            { name: "Austrija", flag: "🇦🇹" },
+            { name: "Azerbajdžan", flag: "🇦🇿" },
+            { name: "Bahami", flag: "🇧🇸" },
+            { name: "Bahrein", flag: "🇧🇭" },
+            { name: "Bangladeš", flag: "🇧🇩" },
+            { name: "Barbados", flag: "🇧🇧" },
+            { name: "Belgija", flag: "🇧🇪" },
+            { name: "Belize", flag: "🇧🇿" },
+            { name: "Benin", flag: "🇧🇯" },
+            { name: "Bjelorusija", flag: "🇧🇾" },
+            { name: "Bolivija", flag: "🇧🇴" },
+            { name: "Bosna i Hercegovina", flag: "🇧🇦" },
+            { name: "Bocvana", flag: "🇧🇼" },
+            { name: "Brazil", flag: "🇧🇷" },
+            { name: "Brunej", flag: "🇧🇳" },
+            { name: "Bugarska", flag: "🇧🇬" },
+            { name: "Burkina Faso", flag: "🇧🇫" },
+            { name: "Burundi", flag: "🇧🇮" },
+            { name: "Butan", flag: "🇧🇹" },
+            { name: "Cipar", flag: "🇨🇾" },
+            { name: "Crna Gora", flag: "🇲🇪" },
+            { name: "Čad", flag: "🇹🇩" },
+            { name: "Češka", flag: "🇨🇿" },
+            { name: "Čile", flag: "🇨🇱" },
+            { name: "Danska", flag: "🇩🇰" },
+            { name: "Dominika", flag: "🇩🇲" },
+            { name: "Dominikanska Republika", flag: "🇩🇴" },
+            { name: "Džibuti", flag: "🇩🇯" },
+            { name: "Egipat", flag: "🇪🇬" },
+            { name: "Ekvador", flag: "🇪🇨" },
+            { name: "Ekvatorijalna Gvineja", flag: "🇬🇶" },
+            { name: "Eritreja", flag: "🇪🇷" },
+            { name: "Estonija", flag: "🇪🇪" },
+            { name: "Esvatini", flag: "🇸🇿" },
+            { name: "Etiopija", flag: "🇪🇹" },
+            { name: "Fidži", flag: "🇫🇯" },
+            { name: "Filipini", flag: "🇵🇭" },
+            { name: "Finska", flag: "🇫🇮" },
+            { name: "Francuska", flag: "🇫🇷" },
+            { name: "Gabon", flag: "🇬🇦" },
+            { name: "Gambija", flag: "🇬🇲" },
+            { name: "Gana", flag: "🇬🇭" },
+            { name: "Grčka", flag: "🇬🇷" },
+            { name: "Grenada", flag: "🇬🇩" },
+            { name: "Gruzija", flag: "🇬🇪" },
+            { name: "Gvajana", flag: "🇬🇾" },
+            { name: "Gvatemala", flag: "🇬🇹" },
+            { name: "Gvineja", flag: "🇬🇳" },
+            { name: "Gvineja Bisau", flag: "🇬🇼" },
+            { name: "Haiti", flag: "🇭🇹" },
+            { name: "Honduras", flag: "🇭🇳" },
+            { name: "Hrvatska", flag: "🇭🇷" },
+            { name: "Indija", flag: "🇮🇳" },
+            { name: "Indonezija", flag: "🇮🇩" },
+            { name: "Irak", flag: "🇮🇶" },
+            { name: "Iran", flag: "🇮🇷" },
+            { name: "Irska", flag: "🇮🇪" },
+            { name: "Island", flag: "🇮🇸" },
+            { name: "Italija", flag: "🇮🇹" },
+            { name: "Izrael", flag: "🇮🇱" },
+            { name: "Jamajka", flag: "🇯🇲" },
+            { name: "Japan", flag: "🇯🇵" },
+            { name: "Jemen", flag: "🇾🇪" },
+            { name: "Jordan", flag: "🇯🇴" },
+            { name: "Južna Koreja", flag: "🇰🇷" },
+            { name: "Južna Afrika", flag: "🇿🇦" },
+            { name: "Južni Sudan", flag: "🇸🇸" },
+            { name: "Kambodža", flag: "🇰🇭" },
+            { name: "Kamerun", flag: "🇨🇲" },
+            { name: "Kanada", flag: "🇨🇦" },
+            { name: "Katar", flag: "🇶🇦" },
+            { name: "Kazahstan", flag: "🇰🇿" },
+            { name: "Kenija", flag: "🇰🇪" },
+            { name: "Kina", flag: "🇨🇳" },
+            { name: "Kipar", flag: "🇨🇾" },
+            { name: "Kirgistan", flag: "🇰🇬" },
+            { name: "Kiribati", flag: "🇰🇮" },
+            { name: "Kolumbija", flag: "🇨🇴" },
+            { name: "Komori", flag: "🇰🇲" },
+            { name: "Kongo", flag: "🇨🇬" },
+            { name: "Kongo, Demokratska Republika", flag: "🇨🇩" },
+            { name: "Kostarika", flag: "🇨🇷" },
+            { name: "Kuba", flag: "🇨🇺" },
+            { name: "Kuvajt", flag: "🇰🇼" },
+            { name: "Kosovo", flag: "🇽🇰" },
+            { name: "Laos", flag: "🇱🇦" },
+            { name: "Latvija", flag: "🇱🇻" },
+            { name: "Lesoto", flag: "🇱🇸" },
+            { name: "Libanon", flag: "🇱🇧" },
+            { name: "Liberija", flag: "🇱🇷" },
+            { name: "Libija", flag: "🇱🇾" },
+            { name: "Lihtenštajn", flag: "🇱🇮" },
+            { name: "Litva", flag: "🇱🇹" },
+            { name: "Luksemburg", flag: "🇱🇺" },
+            { name: "Madagaskar", flag: "🇲🇬" },
+            { name: "Mađarska", flag: "🇭🇺" },
+            { name: "Malavi", flag: "🇲🇼" },
+            { name: "Maldivi", flag: "🇲🇻" },
+            { name: "Malezija", flag: "🇲🇾" },
+            { name: "Mali", flag: "🇲🇱" },
+            { name: "Malta", flag: "🇲🇹" },
+            { name: "Maroko", flag: "🇲🇦" },
+            { name: "Marshallovi Otoci", flag: "🇲🇭" },
+            { name: "Mauricijus", flag: "🇲🇺" },
+            { name: "Mauritanija", flag: "🇲🇷" },
+            { name: "Meksiko", flag: "🇲🇽" },
+            { name: "Mikronezija", flag: "🇫🇲" },
+            { name: "Mjanmar", flag: "🇲🇲" },
+            { name: "Moldavija", flag: "🇲🇩" },
+            { name: "Monako", flag: "🇲🇨" },
+            { name: "Mongolija", flag: "🇲🇳" },
+            { name: "Mozambik", flag: "🇲🇿" },
+            { name: "Namibija", flag: "🇳🇦" },
+            { name: "Nauru", flag: "🇳🇷" },
+            { name: "Nepal", flag: "🇳🇵" },
+            { name: "Niger", flag: "🇳🇪" },
+            { name: "Nigerija", flag: "🇳🇬" },
+            { name: "Nikaragva", flag: "🇳🇮" },
+            { name: "Nizozemska", flag: "🇳🇱" },
+            { name: "Norveška", flag: "🇳🇴" },
+            { name: "Novi Zeland", flag: "🇳🇿" },
+            { name: "Njemačka", flag: "🇩🇪" },
+            { name: "Oman", flag: "🇴🇲" },
+            { name: "Pakistan", flag: "🇵🇰" },
+            { name: "Palau", flag: "🇵🇼" },
+            { name: "Panama", flag: "🇵🇦" },
+            { name: "Papua Nova Gvineja", flag: "🇵🇬" },
+            { name: "Paragvaj", flag: "🇵🇾" },
+            { name: "Peru", flag: "🇵🇪" },
+            { name: "Palestina", flag: "🇵🇸" },
+            { name: "Poljska", flag: "🇵🇱" },
+            { name: "Portugal", flag: "🇵🇹" },
+            { name: "Ruanda", flag: "🇷🇼" },
+            { name: "Rumunjska", flag: "🇷🇴" },
+            { name: "Rusija", flag: "🇷🇺" },
+            { name: "Salomonovi Otoci", flag: "🇸🇧" },
+            { name: "Salvador", flag: "🇸🇻" },
+            { name: "Samoa", flag: "🇼🇸" },
+            { name: "San Marino", flag: "🇸🇲" },
+            { name: "Saudijska Arabija", flag: "🇸🇦" },
+            { name: "Sejšeli", flag: "🇸🇨" },
+            { name: "Senegal", flag: "🇸🇳" },
+            { name: "Saint Lucia", flag: "🇱🇨" },
+            { name: "Sijera Leone", flag: "🇸🇱" },
+            { name: "Singapur", flag: "🇸🇬" },
+            { name: "Sirija", flag: "🇸🇾" },
+            { name: "Sjedinjene Američke Države", flag: "🇺🇸" },
+            { name: "Sjeverna Koreja", flag: "Kim jong un" },
+            { name: "Sjeverna Makedonija", flag: "🇲🇰" },
+            { name: "Slovačka", flag: "🇸🇰" },
+            { name: "Slovenija", flag: "🇸🇮" },
+            { name: "Somalija", flag: "🇸🇴" },
+            { name: "Srbija", flag: "🇷🇸" },
+            { name: "Sudan", flag: "🇸🇩" },
+            { name: "Surinam", flag: "🇸🇷" },
+            { name: "Svazi", flag: "🇸🇿" },
+            { name: "Španjolska", flag: "🇪🇸" },
+            { name: "Šri Lanka", flag: "🇱🇰" },
+            { name: "Švedska", flag: "🇸🇪" },
+            { name: "Švicarska", flag: "🇨🇭" },
+            { name: "Škotska", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
+            { name: "Tajland", flag: "🇹🇭" },
+            { name: "Tajvan", flag: "🇹🇼" },
+            { name: "Tanzanija", flag: "🇹🇿" },
+            { name: "Togo", flag: "🇹🇬" },
+            { name: "Tonga", flag: "🇹🇴" },
+            { name: "Trinidad i Tobago", flag: "🇹🇹" },
+            { name: "Tunis", flag: "🇹🇳" },
+            { name: "Turkmenistan", flag: "🇹🇲" },
+            { name: "Turska", flag: "🇹🇷" },
+            { name: "Tuvalu", flag: "🇹🇻" },
+            { name: "Uganda", flag: "🇺🇬" },
+            { name: "Ukrajina", flag: "🇺🇦" },
+            { name: "Ujedinjeni Arapski Emirati", flag: "🇦🇪" },
+            { name: "Ujedinjeno Kraljevstvo", flag: "🇬🇧" },
+            { name: "Urugvaj", flag: "🇺🇾" },
+            { name: "Uzbekistan", flag: "🇺🇿" },
+            { name: "Vanuatu", flag: "🇻🇺" },
+            { name: "Vatikan", flag: "🇻🇦" },
+            { name: "Wales", flag: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+            { name: "Venezuela", flag: "🇻🇪" },
+            { name: "Vijetnam", flag: "🇻🇳" },
+            { name: "Zambija", flag: "🇿🇲" },
+            { name: "Zelenortska Republika", flag: "🇨🇻" },
+            { name: "Zimbabve", flag: "🇿🇼" },
+            { name: "International", flag: "🏳️" }
+         ];
+
+        // Map za brzi dohvat zastave po imenu države
+        const countryFlags = allCountriesInfo.reduce((map, country) => {
+            map[country.name] = country.flag;
+            return map;
+        }, {});
+
+        // Učitavanje podataka iz localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('countryTallyData');
+            return savedData ? JSON.parse(savedData) : {};
+        }
+
+        // Izračunavanje statistika
+        function calculateStats(tallyData) {
+            const stats = [];
+            for (const countryName in tallyData) {
+                if (tallyData.hasOwnProperty(countryName)) {
+                    const data = tallyData[countryName];
+                    const totalMatches = data.wins + data.draws + data.losses;
+                    const winPercentage = totalMatches > 0 ? ((data.wins / totalMatches) * 100).toFixed(1) : 0;
+                    const flag = countryFlags[countryName] || '🏳️'; // Default flag if not found
+
+                    // Samo dodajemo države koje imaju barem jednu odigranu utakmicu
+                    if (totalMatches > 0) {
+                        stats.push({
+                            name: countryName,
+                            flag: flag,
+                            wins: data.wins,
+                            draws: data.draws,
+                            losses: data.losses,
+                            totalMatches: totalMatches,
+                            winPercentage: parseFloat(winPercentage) // Store as number for sorting
+                        });
+                    }
+                }
+            }
+            return stats;
+        }
+
+        // Prikaz podataka u tablici
+        function displayTable(tableId, data) {
+            const tableBody = document.getElementById(tableId).querySelector('tbody');
+            tableBody.innerHTML = ''; // Clear previous data
+
+            data.forEach(item => {
+                const row = tableBody.insertRow();
+                // Use the new ID for the win percentage table
+                if (tableId === 'winPercentageTable') { 
+                     row.innerHTML = `
+                        <td><span class="flag">${item.flag}</span>${item.name}</td>
+                        <td class="percentage">${item.winPercentage}%</td>
+                        <td class="win">${item.wins}</td>
+                        <td class="draw">${item.draws}</td>
+                        <td class="loss">${item.losses}</td>
+                    `;
+                } else if (tableId === 'topMatchesTable') {
+                     row.innerHTML = `
+                        <td><span class="flag">${item.flag}</span>${item.name}</td>
+                        <td class="total-matches">${item.totalMatches}</td>
+                        <td class="win">${item.wins}</td>
+                        <td class="draw">${item.draws}</td>
+                        <td class="loss">${item.losses}</td>
+                    `;
+                } else { // allCountriesTable
+                    row.innerHTML = `
+                        <td><span class="flag">${item.flag}</span>${item.name}</td>
+                        <td class="win">${item.wins}</td>
+                        <td class="draw">${item.draws}</td>
+                        <td class="loss">${item.losses}</td>
+                        <td class="total-matches">${item.totalMatches}</td>
+                        <td class="percentage">${item.winPercentage}%</td>
+                    `;
+                }
+            });
+        }
+
+        // Sortiranje podataka
+        function sortData(data, key, ascending) {
+            // Create a shallow copy to avoid modifying the original array
+            return [...data].sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+
+                // Ensure consistent comparison for numbers (treat null/undefined as 0 or handle appropriately)
+                // String comparison for 'name' is no longer needed here
+                valA = Number(valA) || 0;
+                valB = Number(valB) || 0;
+
+                // Comparison logic
+                if (valA < valB) {
+                    return ascending ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return ascending ? 1 : -1;
+                }
+                return 0; // Values are equal
+            });
+        }
+
+
+        // --- Glavna logika ---
+        const tallyData = loadData();
+        let countryStats = calculateStats(tallyData);
+        let currentSortKey = 'wins'; // Default sort to wins (descending)
+        let currentSortAscending = false;
+
+
+        // --- Filterable Win Percentage Table Logic ---
+        const minGamesFilterSelect = document.getElementById('minGamesFilterWinPerc');
+
+        function updateAndDisplayWinPercentageTable() {
+            const minGames = parseInt(minGamesFilterSelect.value, 10);
+            // Filter stats based on minimum games played
+            const filteredStats = countryStats.filter(stat => stat.totalMatches >= minGames);
+            // Sort the filtered stats by win percentage (descending) and take top 15
+            const topFilteredWinPercentage = sortData(filteredStats, 'winPercentage', false).slice(0, 15);
+            // Display in the correct table (using the new ID)
+            displayTable('winPercentageTable', topFilteredWinPercentage);
+        }
+
+        // Add event listener to the dropdown
+        minGamesFilterSelect.addEventListener('change', updateAndDisplayWinPercentageTable);
+
+        // --- Initial Table Displays ---
+
+        // Initial display for Top Win Percentage (using the filter function)
+        updateAndDisplayWinPercentageTable(); 
+
+        // Display Top Total Matches (remains unchanged)
+        const topTotalMatches = sortData(countryStats, 'totalMatches', false).slice(0, 15);
+        displayTable('topMatchesTable', topTotalMatches);
+
+        // Display the main sortable table (remains unchanged)
+        let sortedAllCountries = sortData(countryStats, currentSortKey, currentSortAscending);
+        displayTable('allCountriesTable', sortedAllCountries); 
+
+        // --- Search Bar Logic ---
+        const searchInput = document.getElementById('countrySearch');
+
+        function filterAndDisplayAllCountries() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            // Filter the currently sorted data
+            const filteredData = sortedAllCountries.filter(country =>
+                country.name.toLowerCase().includes(searchTerm)
+            );
+
+            // Display the filtered data in the main table
+            displayTable('allCountriesTable', filteredData);
+        }
+
+        // Add event listener for input changes (live search)
+        searchInput.addEventListener('input', filterAndDisplayAllCountries);
+
+        // --- Sorting Logic Handler (needs update) ---
+        function handleSort(sortKey) {
+            if (!sortKey) return; 
+
+            // Determine sort direction
+            if (sortKey === currentSortKey) {
+                currentSortAscending = !currentSortAscending;
+            } else {
+                currentSortKey = sortKey;
+                currentSortAscending = false; 
+            }
+
+            // Perform sorting on the *original full* dataset
+            sortedAllCountries = sortData(countryStats, currentSortKey, currentSortAscending);
+            
+            // *Then* apply the current search filter before displaying
+            filterAndDisplayAllCountries(); 
+
+            // Optional visual indicator logic would go here...
+        }
+
+        // --- Event Listeners ---
+
+        // Listener for Back Button
+        document.getElementById('backButton').addEventListener('click', () => {
+            window.location.href = 'tally counter.html'; 
+        });
+
+        // Listener for Sort Buttons
+        document.querySelectorAll('.sort-buttons button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                handleSort(e.target.getAttribute('data-sort'));
+            });
+        });
+
+        // Listener for Table Header Clicks
+        document.querySelectorAll('#allCountriesTable th[data-sort]').forEach(th => {
+            th.addEventListener('click', (e) => {
+                handleSort(e.currentTarget.getAttribute('data-sort')); 
+            });
+        }); 
+        </script>
+    </div> <!-- Close main-content wrapper -->
+</body>
+</html>

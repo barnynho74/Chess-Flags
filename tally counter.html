@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tally Counter za Države</title>
+    <style>
+        :root { /* Define color variables (optional, but good practice) */
+             --navbar-bg: #333;
+             --navbar-text: #f2f2f2;
+             --button-bg: #4CAF50;
+             --button-hover-bg: #45a049;
+             --card-border: #ddd;
+             --body-bg: #fff; /* Changed from f9f9f9 */
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto; /* Centering handled by main-content */
+            padding: 0; /* Remove body padding */
+            background-color: var(--body-bg);
+        }
+        .top-navbar {
+            background-color: var(--navbar-bg);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: left;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: sticky; /* Sticky navbar */
+            top: 0;
+            z-index: 1000;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 10px; /* Gap between items when wrapping */
+        }
+        .nav-title {
+            color: var(--navbar-text);
+            font-size: 1.4em;
+            font-weight: bold;
+            white-space: nowrap; /* Prevent title wrapping */
+        }
+        .search-container {
+            min-width: 250px;
+             order: 1;
+        }
+        #search {
+            padding: 6px 10px; /* Slightly smaller padding */
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #555; /* Darker border for navbar */
+            background-color: #f0f0f0;
+            font-size: 14px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Spacing between buttons */
+            order: 2; /* Default order */
+        }
+        .nav-button {
+            padding: 6px 12px; /* Adjusted padding */
+            cursor: pointer;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px; /* Slightly smaller font */
+            white-space: nowrap; /* Prevent button text wrapping */
+            transition: background-color 0.2s ease;
+        }
+        .nav-button:hover {
+            background-color: var(--button-hover-bg);
+        }
+        .main-content {
+             padding: 20px; /* Add padding below navbar */
+             max-width: 1200px; /* Max width for content */
+             margin: 0 auto; /* Center content */
+        }
+        h1 {
+             margin: 0;
+        }
+
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .country-card {
+            border: 1px solid #ccc; /* Slightly darker border */
+            border-radius: 8px; /* Slightly larger radius */
+            padding: 12px; /* Slightly more padding */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transition for hover */
+            color: #333; /* Ensure text is readable on light gradients */
+        }
+        .country-card:hover {
+             transform: translateY(-2px); /* Lift card slightly on hover */
+             box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+        }
+        .flag {
+            margin-bottom: 5px;
+            width: 40px; /* Example width, adjust as needed */
+            height: auto; /* Maintain aspect ratio */
+            object-fit: contain; /* Ensure the image fits well */
+        }
+        .country-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .counters {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+        .counter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 2px;
+            font-size: 12px;
+        }
+        .counter button {
+            margin: 2px 0;
+            padding: 3px 6px;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.75); /* Semi-transparent white */
+            border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle border */
+            border-radius: 3px;
+            font-size: 10px;
+            transition: background-color 0.2s ease; /* Smooth hover */
+        }
+        .counter button:hover {
+             background-color: rgba(255, 255, 255, 0.95); /* Brighter on hover */
+        }
+        .counter-value {
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+             /* White outline using text-shadow */
+             text-shadow: 
+                -1px -1px 0 #000,  
+                 1px -1px 0 #000,
+                -1px  1px 0 #000,
+                 1px  1px 0 #000; /* Apply white shadow in all 4 diagonal directions */
+        }
+        .win { color: green; }
+        .draw { color: orange; }
+        .loss { color: red; }
+        .reset-button {
+            font-size: 10px;
+            padding: 3px 5px;
+            margin-top: 5px;
+            cursor: pointer;
+            background-color: rgba(255, 204, 0, 0.8); /* Semi-transparent yellow */
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            transition: background-color 0.2s ease; /* Smooth hover */
+        }
+        .reset-button:hover {
+             background-color: rgba(255, 179, 0, 0.9); /* Darker semi-transparent yellow */
+        }
+        
+        /* Define base colors for gradients (slightly adjusted originals) */
+        :root {
+            --color-europa-base: #a7c7e7; /* Light Blue */
+            --color-južna-amerika-base: #fffacd; /* Lemon Chiffon (Yellowish) */
+            --color-sjeverna-amerika-base: #90ee90; /* Light Green */
+            --color-azija-base: #ffb347; /* Light Orange */
+            --color-afrika-base: #d8bfd8; /* Thistle (Light Purple) */
+            --color-oceanija-base: #afeeee; /* Pale Turquoise (Light Cyan/Blue) */
+            --color-nepoznato-base: #d3d3d3; /* Light Grey */
+            
+        }
+
+        /* Continent Color Coding with Gradients */
+        .continent-europa { background-image: linear-gradient(to bottom right, var(--color-europa-base), #194cf3); } /* Slightly darker blue */
+        .continent-južna-amerika { background-image: linear-gradient(to bottom right, var(--color-južna-amerika-base), #eedd58); } /* Slightly darker yellow */
+        .continent-sjeverna-amerika { background-image: linear-gradient(to bottom right, var(--color-sjeverna-amerika-base), #1c981c); } /* Slightly darker green */
+        .continent-azija { background-image: linear-gradient(to bottom right, var(--color-azija-base), #e78e12); } /* Slightly darker orange */
+        .continent-afrika { background-image: linear-gradient(to bottom right, var(--color-afrika-base), #993bb3); } /* Slightly darker purple */
+        .continent-oceanija { background-image: linear-gradient(to bottom right, var(--color-oceanija-base), #228ca7); } /* Slightly darker cyan */
+        .continent-nepoznato { background-image: linear-gradient(to bottom right, var(--color-nepoznato-base), #b3b3b3); } /* Slightly darker grey */
+
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #333;
+        }
+        .legend-circle {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .top-navbar {
+                flex-direction: column; /* Stack items vertically */
+                align-items: stretch; /* Stretch items full width */
+            }
+            .search-container {
+                order: 2; /* Search below title */
+                width: 100%; /* Full width */
+                max-width: none;
+            }
+            .nav-links {
+                order: 3; /* Buttons below search */
+                flex-wrap: wrap; /* Allow buttons to wrap */
+                justify-content: center; /* Center buttons when wrapped */
+            }
+            .nav-title {
+                order: 1; /* Title first */
+                text-align: center; /* Center title */
+                margin-bottom: 10px;
+            }
+            .country-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Smaller cards on mobile */
+            }
+        }
+
+        @media (max-width: 480px) {
+             .country-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Even smaller cards */
+            }
+             .counter button {
+                 padding: 2px 4px;
+             }
+             .counter-value {
+                 font-size: 13px;
+             }
+             .country-name {
+                 font-size: 13px;
+             }
+            }
+            .structured-input-container {
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+            gap: 10px; /* Space between input elements */
+            align-items: center; /* Align items vertically */
+        }
+        .structured-input-container label {
+            font-size: 14px;
+            color: #333;
+            margin-right: 5px;
+        }
+        .structured-input-container input[type="date"],
+        .structured-input-container input[type="text"],
+        .structured-input-container select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .structured-input-container input[type="text"] {
+            min-width: 200px; /* Minimum width for the text input */
+        }
+
+    </style>
+</head>
+<body>
+    <nav class="top-navbar">
+        <a href="file:///C:/Users/Barny/Desktop/ProjektiGPT/tally%20counter.html" style="text-decoration:none"><div class="nav-title">Tally Counter</div></a>
+         <div class="search-container">
+             <input type="text" id="search" placeholder="Pretraži države...">
+         </div>
+         <div class="nav-links">
+             <button class="nav-button" id="statsButton">Statistika</button>
+             <button class="nav-button" id="chartsButton">Grafikoni</button>
+             <button class="nav-button" id="downloadBackup">Preuzmi backup</button>
+             <button class="nav-button" id="uploadBackup">Učitaj backup</button> 
+             <input type="file" id="backupFile" accept=".json" style="display: none;">
+         </div>
+    </nav>
+
+
+
+    <div class="structured-input-container">
+        <label for="entryDate">Datum:</label>
+        <input type="date" id="entryDate" name="entryDate">
+
+        <label for="entryNote">Bilješka:</label>
+        <input type="text" id="entryNote" name="entryNote" placeholder="Unesite bilješku...">
+
+        <label for="entryType">Tip:</label>
+        <select id="entryType" name="entryType">
+            <option value="win">WIN</option>
+            <option value="draw">DRAW</option>
+            <option value="loss">LOSS</option>
+        </select>
+        <!-- Add a Save button if these inputs should be saved together -->
+        <!-- <button id="saveEntryButton">Spremi unos</button> -->
+    </div>
+<h2>BROJI SE OD 12.pro.2022 EGIPAT POBJEDA (kraj 22 stranice)</h2>
+
+
+    <div class="main-content">
+        <div class="color-legend">
+            <div class="legend-item"><span class="legend-circle continent-europa"></span> Europa</div>
+            <div class="legend-item"><span class="legend-circle continent-južna-amerika"></span> Južna Amerika</div>
+            <div class="legend-item"><span class="legend-circle continent-sjeverna-amerika"></span> Sjeverna Amerika</div>
+            <div class="legend-item"><span class="legend-circle continent-azija"></span> Azija</div>
+            <div class="legend-item"><span class="legend-circle continent-afrika"></span> Afrika</div>
+            <div class="legend-item"><span class="legend-circle continent-oceanija"></span> Oceanija</div>
+            <div class="legend-item"><span class="legend-circle continent-nepoznato"></span> Nepoznato</div>
+        </div>
+        <div class="country-grid" id="countryGrid"></div>
+    </div>
+    
+    <script>
+        // Lista svih država s zastavama
+        const countries = [
+        { name: "Afganistan", flag: "flags/af.png" },
+        { name: "Albanija", flag: "flags/al.png" },
+        { name: "Alžir", flag: "flags/dz.png" },
+        { name: "Argentina", flag: "flags/ar.png" },
+        { name: "Armenija", flag: "flags/am.png" },
+        { name: "Australija", flag: "flags/au.png" },
+        { name: "Austrija", flag: "flags/at.png" },
+        { name: "Azerbajdžan", flag: "flags/az.png" },
+{ name: "Bahami", flag: "flags/bs.png" },
+{ name: "Bahrein", flag: "flags/bh.png" },
+{ name: "Bangladeš", flag: "flags/bd.png" },
+{ name: "Barbados", flag: "flags/bb.png" },
+{ name: "Belgija", flag: "flags/be.png" },
+{ name: "Belize", flag: "flags/bz.png" },
+{ name: "Benin", flag: "flags/bj.png" },
+{ name: "Bjelorusija", flag: "flags/by.png" },
+{ name: "Bolivija", flag: "flags/bo.png" },
+{ name: "Bosna i Hercegovina", flag: "flags/ba.png" },
+{ name: "Bocvana", flag: "flags/bw.png" },
+{ name: "Brazil", flag: "flags/br.png" },
+{ name: "Brunej", flag: "flags/bn.png" },
+{ name: "Bugarska", flag: "flags/bg.png" },
+{ name: "Burkina Faso", flag: "flags/bf.png" },
+{ name: "Burundi", flag: "flags/bi.png" },
+{ name: "Butan", flag: "flags/bt.png" },
+{ name: "Cipar", flag: "flags/cy.png" },
+{ name: "Crna Gora", flag: "flags/me.png" },
+{ name: "Čad", flag: "flags/td.png" },
+{ name: "Češka", flag: "flags/cz.png" },
+{ name: "Čile", flag: "flags/cl.png" },
+{ name: "Danska", flag: "flags/dk.png" },
+{ name: "Dominika", flag: "flags/dm.png" },
+{ name: "Dominikanska Republika", flag: "flags/do.png" },
+{ name: "Džibuti", flag: "flags/dj.png" },
+{ name: "Egipat", flag: "flags/eg.png" },
+{ name: "Ekvador", flag: "flags/ec.png" },
+{ name: "Ekvatorijalna Gvineja", flag: "flags/gq.png" },
+{ name: "Eritreja", flag: "flags/er.png" },
+{ name: "Estonija", flag: "flags/ee.png" },
+{ name: "Esvatini", flag: "flags/sz.png" },
+{ name: "Etiopija", flag: "flags/et.png" },
+{ name: "Fidži", flag: "flags/fj.png" },
+{ name: "Filipini", flag: "flags/ph.png" },
+{ name: "Finska", flag: "flags/fi.png" },
+{ name: "Francuska", flag: "flags/fr.png" },
+{ name: "Gabon", flag: "flags/ga.png" },
+{ name: "Gambija", flag: "flags/gm.png" },
+{ name: "Gana", flag: "flags/gh.png" },
+{ name: "Grčka", flag: "flags/gr.png" },
+{ name: "Grenada", flag: "flags/gd.png" },
+{ name: "Gruzija", flag: "flags/ge.png" },
+{ name: "Gvajana", flag: "flags/gy.png" },
+{ name: "Gvatemala", flag: "flags/gt.png" },
+{ name: "Gvineja", flag: "flags/gn.png" },
+{ name: "Gvineja Bisau", flag: "flags/gw.png" },
+{ name: "Haiti", flag: "flags/ht.png" },
+{ name: "Honduras", flag: "flags/hn.png" },
+{ name: "Hrvatska", flag: "flags/hr.png" },
+{ name: "Indija", flag: "flags/in.png" },
+{ name: "Indonezija", flag: "flags/id.png" },
+{ name: "Irak", flag: "flags/iq.png" },
+{ name: "Iran", flag: "flags/ir.png" },
+{ name: "Irska", flag: "flags/ie.png" },
+{ name: "Island", flag: "flags/is.png" },
+{ name: "Italija", flag: "flags/it.png" },
+{ name: "Izrael", flag: "flags/il.png" },
+{ name: "Jamajka", flag: "flags/jm.png" },
+{ name: "Japan", flag: "flags/jp.png" },
+{ name: "Jemen", flag: "flags/ye.png" },
+{ name: "Jordan", flag: "flags/jo.png" },
+{ name: "Južna Koreja", flag: "flags/kr.png" },
+{ name: "Južna Afrika", flag: "flags/za.png" },
+{ name: "Južni Sudan", flag: "flags/ss.png" },
+{ name: "Kambodža", flag: "flags/kh.png" },
+{ name: "Kamerun", flag: "flags/cm.png" },
+{ name: "Kanada", flag: "flags/ca.png" },
+{ name: "Katar", flag: "flags/qa.png" },
+{ name: "Kazahstan", flag: "flags/kz.png" },
+{ name: "Kenija", flag: "flags/ke.png" },
+{ name: "Kina", flag: "flags/cn.png" },
+{ name: "Kirgistan", flag: "flags/kg.png" },
+{ name: "Kiribati", flag: "flags/ki.png" },
+{ name: "Kolumbija", flag: "flags/co.png" },
+{ name: "Komori", flag: "flags/km.png" },
+{ name: "Kongo", flag: "flags/cg.png" },
+{ name: "Kongo, Demokratska Republika", flag: "flags/cd.png" },
+{ name: "Kostarika", flag: "flags/cr.png" },
+{ name: "Kuba", flag: "flags/cu.png" },
+{ name: "Kuvajt", flag: "flags/kw.png" },
+{ name: "Kosovo", flag: "flags/xk.png" },
+{ name: "Laos", flag: "flags/la.png" },
+{ name: "Latvija", flag: "flags/lv.png" },
+{ name: "Lesoto", flag: "flags/ls.png" },
+{ name: "Libanon", flag: "flags/lb.png" },
+{ name: "Liberija", flag: "flags/lr.png" },
+{ name: "Libija", flag: "flags/ly.png" },
+{ name: "Lihtenštajn", flag: "flags/li.png" },
+{ name: "Litva", flag: "flags/lt.png" },
+{ name: "Luksemburg", flag: "flags/lu.png" },
+{ name: "Madagaskar", flag: "flags/mg.png" },
+{ name: "Mađarska", flag: "flags/hu.png" },
+{ name: "Malavi", flag: "flags/mw.png" },
+{ name: "Maldivi", flag: "flags/mv.png" },
+{ name: "Malezija", flag: "flags/my.png" },
+{ name: "Mali", flag: "flags/ml.png" },
+{ name: "Malta", flag: "flags/mt.png" },
+{ name: "Maroko", flag: "flags/ma.png" },
+{ name: "Marshallovi Otoci", flag: "flags/mh.png" },
+{ name: "Mauricijus", flag: "flags/mu.png" },
+{ name: "Mauritanija", flag: "flags/mr.png" },
+{ name: "Meksiko", flag: "flags/mx.png" },
+{ name: "Mikronezija", flag: "flags/fm.png" },
+{ name: "Mjanmar", flag: "flags/mm.png" },
+{ name: "Moldavija", flag: "flags/md.png" },
+{ name: "Monako", flag: "flags/mc.png" },
+{ name: "Mongolija", flag: "flags/mn.png" },
+{ name: "Mozambik", flag: "flags/mz.png" },
+{ name: "Namibija", flag: "flags/na.png" },
+{ name: "Nauru", flag: "flags/nr.png" },
+{ name: "Nepal", flag: "flags/np.png" },
+{ name: "Niger", flag: "flags/ne.png" },
+{ name: "Nigerija", flag: "flags/ng.png" },
+{ name: "Nikaragva", flag: "flags/ni.png" },
+{ name: "Nizozemska", flag: "flags/nl.png" },
+{ name: "Norveška", flag: "flags/no.png" },
+{ name: "Novi Zeland", flag: "flags/nz.png" },
+{ name: "Njemačka", flag: "flags/de.png" },
+{ name: "Oman", flag: "flags/om.png" },
+{ name: "Pakistan", flag: "flags/pk.png" },
+{ name: "Palau", flag: "flags/pw.png" },
+{ name: "Panama", flag: "flags/pa.png" },
+{ name: "Papua Nova Gvineja", flag: "flags/pg.png" },
+{ name: "Paragvaj", flag: "flags/py.png" },
+{ name: "Peru", flag: "flags/pe.png" },
+{ name: "Palestina", flag: "flags/ps.png" },
+{ name: "Poljska", flag: "flags/pl.png" },
+{ name: "Portugal", flag: "flags/pt.png" },
+{ name: "Ruanda", flag: "flags/rw.png" },
+{ name: "Rumunjska", flag: "flags/ro.png" },
+{ name: "Rusija", flag: "flags/ru.png" },
+{ name: "Salomonovi Otoci", flag: "flags/sb.png" },
+{ name: "Salvador", flag: "flags/sv.png" },
+{ name: "Samoa", flag: "flags/ws.png" },
+{ name: "San Marino", flag: "flags/sm.png" },
+{ name: "Saudijska Arabija", flag: "flags/sa.png" },
+{ name: "Sejšeli", flag: "flags/sc.png" },
+{ name: "Senegal", flag: "flags/sn.png" },
+{ name: "Saint Lucia", flag: "flags/lc.png" },
+{ name: "Sijera Leone", flag: "flags/sl.png" },
+{ name: "Singapur", flag: "flags/sg.png" },
+{ name: "Sirija", flag: "flags/sy.png" },
+{ name: "Sjedinjene Američke Države", flag: "flags/us.png" },
+{ name: "Sjeverna Koreja", flag: "flags/kp.png" },
+{ name: "Sjeverna Makedonija", flag: "flags/mk.png" },
+{ name: "Slovačka", flag: "flags/sk.png" },
+{ name: "Slovenija", flag: "flags/si.png" },
+{ name: "Somalija", flag: "flags/so.png" },
+{ name: "Srbija", flag: "flags/rs.png" },
+{ name: "Sudan", flag: "flags/sd.png" },
+{ name: "Surinam", flag: "flags/sr.png" },
+{ name: "Svazi", flag: "flags/sz.png" },
+{ name: "Španjolska", flag: "flags/es.png" },
+{ name: "Šri Lanka", flag: "flags/lk.png" },
+{ name: "Švedska", flag: "flags/se.png" },
+{ name: "Švicarska", flag: "flags/ch.png" },
+{ name: "Škotska", flag: "flags/gb-sct.png" }, // koristimo posebnu ISO oznaku
+{ name: "Tajland", flag: "flags/th.png" },
+{ name: "Tajvan", flag: "flags/tw.png" },
+{ name: "Tanzanija", flag: "flags/tz.png" },
+{ name: "Togo", flag: "flags/tg.png" },
+{ name: "Tonga", flag: "flags/to.png" },
+{ name: "Trinidad i Tobago", flag: "flags/tt.png" },
+{ name: "Tunis", flag: "flags/tn.png" },
+{ name: "Turkmenistan", flag: "flags/tm.png" },
+{ name: "Turska", flag: "flags/tr.png" },
+{ name: "Tuvalu", flag: "flags/tv.png" },
+{ name: "Uganda", flag: "flags/ug.png" },
+{ name: "Ukrajina", flag: "flags/ua.png" },
+{ name: "Ujedinjeni Arapski Emirati", flag: "flags/ae.png" },
+{ name: "Ujedinjeno Kraljevstvo", flag: "flags/gb.png" },
+{ name: "Urugvaj", flag: "flags/uy.png" },
+{ name: "Uzbekistan", flag: "flags/uz.png" },
+{ name: "Vanuatu", flag: "flags/vu.png" },
+{ name: "Vatikan", flag: "flags/va.png" },
+{ name: "Wales", flag: "flags/gb-wls.png" }, // također posebna ISO oznaka
+{ name: "Venezuela", flag: "flags/ve.png" },
+{ name: "Vijetnam", flag: "flags/vn.png" },
+{ name: "Zambija", flag: "flags/zm.png" },
+{ name: "Zelenortska Republika", flag: "flags/cv.png" },
+{ name: "Zimbabve", flag: "flags/zw.png" },
+{ name: "International", flag: "flags/international.jpeg" }
+        ];
+
+        // Sortiranje država po abecedi
+        countries.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Mapiranje Država na Kontinente
+        const countryContinents = {
+            "Afganistan": "Azija", "Albanija": "Europa", "Alžir": "Afrika", "Andora": "Europa", "Angola": "Afrika",
+            "Antigva i Barbuda": "Sjeverna Amerika", "Argentina": "Južna Amerika", "Armenija": "Azija", "Australija": "Oceanija",
+            "Austrija": "Europa", "Azerbajdžan": "Azija", "Bahami": "Sjeverna Amerika", "Bahrein": "Azija", "Bangladeš": "Azija",
+            "Barbados": "Sjeverna Amerika", "Belgija": "Europa", "Belize": "Sjeverna Amerika", "Benin": "Afrika",
+            "Bjelorusija": "Europa", "Bolivija": "Južna Amerika", "Bosna i Hercegovina": "Europa", "Bocvana": "Afrika",
+            "Brazil": "Južna Amerika", "Brunej": "Azija", "Bugarska": "Europa", "Burkina Faso": "Afrika", "Burundi": "Afrika",
+            "Butan": "Azija", "Cipar": "Azija",
+            "Crna Gora": "Europa", "Čad": "Afrika", "Češka": "Europa", "Čile": "Južna Amerika", "Danska": "Europa",
+            "Dominika": "Sjeverna Amerika", "Dominikanska Republika": "Sjeverna Amerika", "Džibuti": "Afrika", "Egipat": "Afrika",
+            "Ekvador": "Južna Amerika", "Ekvatorijalna Gvineja": "Afrika", "Eritreja": "Afrika", "Estonija": "Europa",
+            "Esvatini": "Afrika", "Etiopija": "Afrika", "Fidži": "Oceanija", "Filipini": "Azija", "Finska": "Europa",
+            "Francuska": "Europa", "Gabon": "Afrika", "Gambija": "Afrika", "Gana": "Afrika", "Grčka": "Europa",
+            "Grenada": "Sjeverna Amerika", "Gruzija": "Azija",
+            "Gvajana": "Južna Amerika", "Gvatemala": "Sjeverna Amerika", "Gvineja": "Afrika", "Gvineja Bisau": "Afrika",
+            "Haiti": "Sjeverna Amerika", "Honduras": "Sjeverna Amerika", "Hrvatska": "Europa", "Indija": "Azija",
+            "Indonezija": "Azija", "Irak": "Azija", "Iran": "Azija", "Irska": "Europa", "Island": "Europa", "Italija": "Europa",
+            "Izrael": "Azija", "Jamajka": "Sjeverna Amerika", "Japan": "Azija", "Jemen": "Azija", "Jordan": "Azija",
+            "Južna Koreja": "Azija", "Južna Afrika": "Afrika", "Južni Sudan": "Afrika", "Kambodža": "Azija",
+            "Kamerun": "Afrika", "Kanada": "Sjeverna Amerika", "Katar": "Azija", "Kazahstan": "Azija",
+            "Kenija": "Afrika", "Kina": "Azija", "Kipar": "Azija", // Duplicate, handled ok
+            "Kirgistan": "Azija", "Kiribati": "Oceanija", "Kolumbija": "Južna Amerika", "Komori": "Afrika", "Kongo": "Afrika",
+            "Kongo, Demokratska Republika": "Afrika", "Kostarika": "Sjeverna Amerika", "Kuba": "Sjeverna Amerika",
+            "Kuvajt": "Azija", "Kosovo": "Europa", "Laos": "Azija", "Latvija": "Europa", "Lesoto": "Afrika",
+            "Libanon": "Azija", "Liberija": "Afrika", "Libija": "Afrika", "Lihtenštajn": "Europa", "Litva": "Europa",
+            "Luksemburg": "Europa", "Madagaskar": "Afrika", "Mađarska": "Europa", "Malavi": "Afrika", "Maldivi": "Azija",
+            "Malezija": "Azija", "Mali": "Afrika", "Malta": "Europa", "Maroko": "Afrika", "Marshallovi Otoci": "Oceanija",
+            "Mauricijus": "Afrika", "Mauritanija": "Afrika", "Meksiko": "Sjeverna Amerika", "Mikronezija": "Oceanija",
+            "Mjanmar": "Azija", "Moldavija": "Europa", "Monako": "Europa", "Mongolija": "Azija", "Mozambik": "Afrika",
+            "Namibija": "Afrika", "Nauru": "Oceanija", "Nepal": "Azija", "Niger": "Afrika", "Nigerija": "Afrika",
+            "Nikaragva": "Sjeverna Amerika", "Nizozemska": "Europa", "Norveška": "Europa", "Novi Zeland": "Oceanija",
+            "Njemačka": "Europa", "Oman": "Azija", "Pakistan": "Azija", "Palau": "Oceanija", "Panama": "Sjeverna Amerika",
+            "Papua Nova Gvineja": "Oceanija", "Paragvaj": "Južna Amerika", "Peru": "Južna Amerika", "Palestina": "Azija",
+            "Poljska": "Europa", "Portugal": "Europa", "Ruanda": "Afrika", "Rumunjska": "Europa", "Rusija": "Europa",
+            "Salomonovi Otoci": "Oceanija", "Salvador": "Sjeverna Amerika", "Samoa": "Oceanija", "San Marino": "Europa",
+            "Saudijska Arabija": "Azija", "Sejšeli": "Afrika", "Senegal": "Afrika", "Saint Lucia": "Sjeverna Amerika",
+            "Sijera Leone": "Afrika", "Singapur": "Azija", "Sirija": "Azija", "Sjedinjene Američke Države": "Sjeverna Amerika",
+            "Sjeverna Makedonija": "Europa", "Sjeverna Koreja": "Azija", "Slovačka": "Europa", "Slovenija": "Europa",
+            "Somalija": "Afrika", "Srbija": "Europa", "Sudan": "Afrika", "Surinam": "Južna Amerika", "Svazi": "Afrika",
+            "Španjolska": "Europa", "Šri Lanka": "Azija", "Švedska": "Europa", "Švicarska": "Europa", "Škotska": "Europa",
+            "Tajland": "Azija", "Tajvan": "Azija", "Tanzanija": "Afrika", "Togo": "Afrika", "Tonga": "Oceanija",
+            "Trinidad i Tobago": "Južna Amerika", "Tunis": "Afrika", "Turkmenistan": "Azija", "Turska": "Azija",
+            "Tuvalu": "Oceanija", "Uganda": "Afrika", "Ukrajina": "Europa", "Ujedinjeni Arapski Emirati": "Azija",
+            "Ujedinjeno Kraljevstvo": "Europa", "Urugvaj": "Južna Amerika", "Uzbekistan": "Azija", "Vanuatu": "Oceanija",
+            "Vatikan": "Europa", "Wales": "Europa", "Venezuela": "Južna Amerika", "Vijetnam": "Azija", "Zambija": "Afrika",
+            "Zelenortska Republika": "Afrika", "Zimbabve": "Afrika", "International": "Nepoznato"
+        };
+
+        // Učitavanje spremljenih podataka iz localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('countryTallyData');
+            return savedData ? JSON.parse(savedData) : {};
+        }
+
+        // Spremanje podataka u localStorage
+        function saveData(data) {
+            localStorage.setItem('countryTallyData', JSON.stringify(data));
+        }
+
+        // Inicijalizacija podataka
+        let tallyData = loadData();
+
+        // Kreiranje kartice za državu (smanjena verzija)
+        function createCountryCard(country) {
+            const card = document.createElement('div');
+            card.className = 'country-card'; // Base class
+
+            // Determine continent and add class
+            const continent = countryContinents[country.name] || 'Nepoznato';
+            // Create a CSS-friendly class name (lowercase, replace space with hyphen)
+            const continentClass = `continent-${continent.toLowerCase().replace(' ', '-')}`;
+            card.classList.add(continentClass);
+
+            if (!tallyData[country.name]) {
+                tallyData[country.name] = { wins: 0, draws: 0, losses: 0 };
+                saveData(tallyData);
+            }
+
+            const data = tallyData[country.name];
+
+            card.innerHTML = `
+                <img src="${country.flag}" alt="Zastava ${country.name}" class="flag">
+                <div class="country-name">${country.name}</div>
+                <div class="counters">
+                    <div class="counter">
+                        <button class="increment-win">+</button>
+                        <div class="counter-value win">${data.wins}</div>
+                        <button class="decrement-win">-</button>
+                        <div>P</div>
+                    </div>
+                    <div class="counter">
+                        <button class="increment-draw">+</button>
+                        <div class="counter-value draw">${data.draws}</div>
+                        <button class="decrement-draw">-</button>
+                        <div>R</div>
+                    </div>
+                    <div class="counter">
+                        <button class="increment-loss">+</button>
+                        <div class="counter-value loss">${data.losses}</div>
+                        <button class="decrement-loss">-</button>
+                        <div>I</div>
+                    </div>
+                </div>
+                <button class="reset-button">Reset</button>
+            `;
+            
+            // Event listeneri za gumbe
+            card.querySelector('.increment-win').addEventListener('click', () => {
+                data.wins++;
+                card.querySelector('.win').textContent = data.wins;
+                saveData(tallyData);
+            });
+            
+            card.querySelector('.decrement-win').addEventListener('click', () => {
+                if (data.wins > 0) {
+                    data.wins--;
+                    card.querySelector('.win').textContent = data.wins;
+                    saveData(tallyData);
+                }
+            });
+
+            card.querySelector('.increment-draw').addEventListener('click', () => {
+                data.draws++;
+                card.querySelector('.draw').textContent = data.draws;
+                saveData(tallyData);
+            });
+
+            card.querySelector('.decrement-draw').addEventListener('click', () => {
+                if (data.draws > 0) {
+                    data.draws--;
+                    card.querySelector('.draw').textContent = data.draws;
+                    saveData(tallyData);
+                }
+            });
+
+            card.querySelector('.increment-loss').addEventListener('click', () => {
+                data.losses++;
+                card.querySelector('.loss').textContent = data.losses;
+                saveData(tallyData);
+            });
+
+            card.querySelector('.decrement-loss').addEventListener('click', () => {
+                if (data.losses > 0) {
+                    data.losses--;
+                    card.querySelector('.loss').textContent = data.losses;
+                    saveData(tallyData);
+                }
+            });
+            
+            card.querySelector('.reset-button').addEventListener('click', () => {
+                if (confirm(`Jeste li sigurni da želite resetirati brojač za ${country.name}?`)) {
+                    data.wins = 0;
+                    data.draws = 0;
+                    data.losses = 0;
+                    card.querySelector('.win').textContent = data.wins;
+                    card.querySelector('.draw').textContent = data.draws;
+                    card.querySelector('.loss').textContent = data.losses;
+                    saveData(tallyData);
+                }
+            });
+            
+            return card;
+        }
+
+        // Prikaz svih država
+        function displayCountries(countryList) {
+            const grid = document.getElementById('countryGrid');
+            grid.innerHTML = '';
+            
+            countryList.forEach(country => {
+                grid.appendChild(createCountryCard(country));
+            });
+        }
+
+        // Pretraživanje država
+        document.getElementById('search').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredCountries = countries.filter(country => 
+                country.name.toLowerCase().includes(searchTerm)
+            );
+            displayCountries(filteredCountries);
+        });
+
+// --- Backup & Restore ---
+
+// Preuzimanje Backup-a
+document.getElementById('downloadBackup').addEventListener('click', () => {
+    const dataStr = JSON.stringify(tallyData, null, 2); // Pretty print JSON
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    link.download = `tally_counter_backup_${date}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+});
+
+// Trigger za odabir datoteke za učitavanje
+document.getElementById('uploadBackup').addEventListener('click', () => {
+    document.getElementById('backupFile').click();
+});
+
+// Obrada učitane datoteke
+document.getElementById('backupFile').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            // Jednostavna validacija - provjeravamo ima li barem jedan ključ koji postoji u našoj listi država
+            const firstCountryKey = Object.keys(importedData)[0];
+            if (!firstCountryKey || !countries.some(c => c.name === firstCountryKey) || typeof importedData[firstCountryKey].wins === 'undefined') {
+               throw new Error("Format datoteke nije ispravan.");
+            }
+
+            if (confirm("Jeste li sigurni da želite prebrisati trenutne podatke s podacima iz backup datoteke?")) {
+                tallyData = importedData;
+                saveData(tallyData);
+                // Ponovno prikaži sve kartice s učitanim podacima
+                displayCountries(countries); 
+                alert("Backup podaci uspješno učitani!");
+            }
+        } catch (error) {
+            console.error("Greška pri učitavanju backup datoteke:", error);
+            alert("Greška pri učitavanju backup datoteke. Provjerite je li datoteka ispravna JSON datoteka s očekivanim formatom.\n" + error.message);
+        } finally {
+             // Resetiraj input kako bi isti fajl mogao biti ponovno učitan ako je potrebno
+             event.target.value = null;
+        }
+    };
+    reader.onerror = (error) => {
+        console.error("Greška pri čitanju datoteke:", error);
+        alert("Greška pri čitanju datoteke.");
+         event.target.value = null; // Resetiraj input
+    };
+    reader.readAsText(file);
+});
+
+
+// --- Navigacija između stranica ---
+document.getElementById('statsButton').addEventListener('click', () => {
+    window.location.href = 'statistika.html'; // Link to statistika.html
+});
+
+document.getElementById('chartsButton').addEventListener('click', () => {
+    window.location.href = 'grafikoni.html'; // Link to grafikoni.html
+});
+
+// Inicijalni prikaz
+displayCountries(countries);
+
+// --- Structured Input Functionality ---
+// --- Structured Input Functionality ---
+const entryDateInput = document.getElementById('entryDate');
+const entryNoteInput = document.getElementById('entryNote');
+const entryTypeSelect = document.getElementById('entryType');
+const localStorageKeyStructuredNote = 'structuredTallyCounterNote';
+const localStorageKeyStructuredType = 'structuredTallyCounterType'; // New key for dropdown
+
+
+// Function to set today's date in the date input
+function setTodayDate() {
+    if (entryDateInput) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const day = String(today.getDate()).padStart(2, '0');
+        entryDateInput.value = `${year}-${month}-${day}`;
+    }
+}
+
+// Load note from localStorage
+function loadEntryNote() {
+    if (entryNoteInput) {
+        const savedNote = localStorage.getItem(localStorageKeyStructuredNote);
+        if (savedNote) {
+            entryNoteInput.value = savedNote;
+        }
+    }
+}
+
+// Load selected type from localStorage
+function loadEntryType() {
+    if (entryTypeSelect) {
+        const savedType = localStorage.getItem(localStorageKeyStructuredType);
+        if (savedType) {
+            entryTypeSelect.value = savedType;
+        }
+    }
+}
+
+// Save note to localStorage
+function saveEntryNote() {
+    if (entryNoteInput) {
+        const noteText = entryNoteInput.value;
+        localStorage.setItem(localStorageKeyStructuredNote, noteText);
+    }
+}
+
+// Save selected type to localStorage
+function saveEntryType() {
+    if (entryTypeSelect) {
+        localStorage.setItem(localStorageKeyStructuredType, entryTypeSelect.value);
+    }
+}
+
+// Set today's date and load the saved note and type when the page loads
+setTodayDate();
+loadEntryNote();
+loadEntryType(); // Load the saved type
+
+// Event listener for the note input changes
+if (entryNoteInput) {
+    entryNoteInput.addEventListener('input', saveEntryNote);
+}
+
+// Event listener for the type select changes
+if (entryTypeSelect) {
+    entryTypeSelect.addEventListener('change', saveEntryType);
+}
+    </script>
+    </div> <!-- Close main-content -->
+</body>
+</html>
