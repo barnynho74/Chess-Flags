@@ -1,1 +1,13 @@
-Chess flag counter - alat za praćenje pobjeda, poraza i remija u šahu protiv protivnika iz različitih država, uz detaljnu statistiku i vizualne prikaze
+Web-based tally counter za praćenje šahovskih rezultata po državama, s naprednom statistikom, grafikonima i kartom svijeta.
+
+Korisnik ručno bilježi rezultate partija (WIN / DRAW / LOSS) pomoću tally countera za svaku državu iz koje dolazi protivnik.
+
+Glavne funkcionalnosti:
+
+- Brojač pobjeda, remija i poraza po državi
+- Grupiranje država po kontinentima
+- Detaljna statistika i grafikoni
+- Interaktivna karta svijeta s prikazom rezultata
+- Pretraživanje država
+- Backup i restore podataka
+- Dodavanje datuma i bilješki uz partije
